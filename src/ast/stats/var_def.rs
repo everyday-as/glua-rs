@@ -1,22 +1,22 @@
 use crate::ast::{Exp, Stat};
 
 #[derive(Debug)]
-pub struct Assignment {
-    vars: Vec<Exp>,
-    exprs: Vec<Exp>,
+pub struct VarDef {
+    names: Vec<String>,
+    init_exps: Option<Vec<Exp>>
 }
 
-impl Assignment {
-    pub fn new(vars: Vec<Exp>, exprs: Vec<Exp>) -> Self {
+impl VarDef {
+    pub fn new(names: Vec<String>, init_exps: Option<Vec<Exp>>) -> Self {
         Self {
-            vars,
-            exprs,
+            names,
+            init_exps,
         }
     }
 }
 
-impl Into<Stat> for Assignment {
+impl Into<Stat> for VarDef {
     fn into(self) -> Stat {
-        Stat::Assignment(self)
+        Stat::VarDef(self)
     }
 }

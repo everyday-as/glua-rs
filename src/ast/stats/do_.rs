@@ -1,12 +1,12 @@
-use crate::ast::{Exp, Stat};
+use crate::ast::{Exp, Stat, Block};
 
 #[derive(Debug)]
 pub struct Do {
-    body: Vec<Stat>
+    body: Block
 }
 
 impl Do {
-    pub fn new(body: Vec<Stat>) -> Self {
+    pub fn new(body: Block) -> Self {
         Self {
             body
         }

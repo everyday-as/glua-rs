@@ -11,4 +11,4 @@ lalrpop = { version = "0.19", features = ["lexer"] }
 
 [dependencies]
 lalrpop-util = "0.19"
-regex = "1"
+plex = "0.2.5"
