@@ -289,7 +289,7 @@ impl Parser {
             Token::Keyword(Keyword::Return) => {
                 match self.with_rewind(
                     |parser| parser.parse_list(Self::parse_exp),
-                    |e| e.ends_with("expected exp"),
+                    |e| e.ends_with("expected expression"),
                 )? {
                     Some(exps) => Ok(Return::new(exps).into()),
                     None => Ok(Return::new(Vec::new()).into())
