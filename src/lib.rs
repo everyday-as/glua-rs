@@ -1,14 +1,19 @@
-mod ast;
-mod parser;
+pub use self::lexer::lex;
+pub use self::parser::Parser;
 
-mod lexer;
+pub mod ast;
+pub mod lexer;
+pub mod parser;
+
+
 
 #[cfg(test)]
 mod tests {
-    use crate::lexer::lex;
     use std::fs::File;
     use std::io::Read;
-    use crate::parser::Parser;
+
+    use crate::lexer::lex;
+    use crate::Parser;
 
     #[test]
     fn it_works() {
