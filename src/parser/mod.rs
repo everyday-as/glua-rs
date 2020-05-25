@@ -230,17 +230,16 @@ impl Parser {
                     // function funcname funcbody
                     Keyword::Function => {
                         let name = {
-                            let mut name = self.parse_name()?;
-
                             let parts = self.parse_delimited(
                                 Op::Dot,
                                 Self::parse_name,
-                                |token| [Token::LParens, Token::Semicolon].contains(&token),
+                                |token| [Token::LParens, Token::Op(Op::Colon)].contains(&token),
                             ).unwrap();
 
-                            name.push_str(&parts.join("."));
+                            let mut name = parts.join(".");
 
-                            if self.consume_a(Token::Semicolon) {
+                            if self.consume_a(Op::Colon) {
+                                name.push(':');
                                 name.push_str(&self.parse_name()?)
                             }
 
