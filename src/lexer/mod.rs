@@ -114,7 +114,7 @@ pub fn lex(mut input: &str) -> Result<Vec<Token>, String> {
                 "<="    => Ok(Op::LtEq.into()),
                 "%"     => Ok(Op::Mod.into()),
                 r"\*"   => Ok(Op::Mul.into()),
-                "!="    => Ok(Op::Ne.into()),
+                r"\~="  => Ok(Op::Ne.into()),
                 "-"     => Ok(Op::Sub.into()),
 
                 // GMod specific
