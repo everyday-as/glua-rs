@@ -6,9 +6,5 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[build-dependencies]
-lalrpop = { version = "0.19", features = ["lexer"] }
-
 [dependencies]
-lalrpop-util = "0.19"
 plex = "0.2.5"
