@@ -175,7 +175,7 @@ impl Parser {
 
                         self.expect(Keyword::End)?;
 
-                        Ok(IfElse::new(cond, else_ifs, else_block).into())
+                        Ok(IfElse::new(cond, body, else_ifs, else_block).into())
                     }
 
                     Keyword::For => match self.peek(1)? {
