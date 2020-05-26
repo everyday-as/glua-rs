@@ -628,6 +628,14 @@ fn get_led_parselet(token: Token) -> Option<&'static dyn Led> {
 
         Token::Op(Op::Or) => Some(&led::OrParselet),
 
+        // Prefix
+        Token::LBracket | Token::Op(Op::Dot) => Some(&led::AccessParselet),
+
+        Token::LParens | Token::LBrace
+        | Token::Literal(Literal::String(_)) => Some(&led::FunctionCallParselet),
+
+        Token::Op(Op::Colon) => Some(&led::MethodCallParselet),
+
         _ => None
     }
 }
@@ -646,6 +654,9 @@ fn get_prefix_led_parselet(token: Token) -> Option<&'static dyn Led> {
         | Token::Literal(Literal::String(_)) => Some(&led::FunctionCallParselet),
 
         Token::Op(Op::Colon) => Some(&led::MethodCallParselet),
+
+        // Var
+        Token::LBracket | Token::Op(Op::Dot) => Some(&led::AccessParselet),
 
         _ => None
     }
