@@ -6,11 +6,10 @@ pub mod lexer;
 pub mod parser;
 
 
-
 #[cfg(test)]
 mod tests {
     use std::fs::File;
-    use std::io::Read;
+    use std::io::{Read, Write};
 
     use crate::lexer::lex;
     use crate::Parser;
@@ -29,9 +28,9 @@ mod tests {
 
         let mut parser = Parser::new(lex(&lua).unwrap());
 
-        let mut exp = parser.parse_chunk().unwrap();
+        let mut chunk = parser.parse_chunk().unwrap();
 
-        println!("{:#?}", exp);
-        // println!("{:#?}", exp.eval())
+        println!("{:#?}", chunk);
     }
 }
+
