@@ -95,8 +95,9 @@ pub fn lex(mut input: &str) -> Result<Vec<Token>, String> {
                 }
 
                 // String
-                r#""(\\.|[^"\\])*""# => Ok(Literal::String(text[1..text.len() - 1].to_owned()).into()),
-                r#"'(\\.|[^'\\])*'"# => Ok(Literal::String(text[1..text.len() - 1].to_owned()).into()),
+                "\"(\\.|[^\"\\\\\n])*\""                 => Ok(Literal::String(text[1..text.len() - 1].to_owned()).into()),
+                "'(\\\\.|[^'\\\\\n])*'"                  => Ok(Literal::String(text[1..text.len() - 1].to_owned()).into()),
+                "\\[\\[(\\\\.|[^(\\]\\])\\\\\n])*\\]\\]" => Ok(Literal::String(text[2..text.len() - 2].to_owned()).into()),
 
 
             // Operators
