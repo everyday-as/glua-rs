@@ -12,7 +12,7 @@ impl Led for AccessParselet {
             Token::LBracket => {
                 let exp = parser.parse_exp()?;
 
-                parser.expect(Token::RBracket);
+                parser.expect(Token::RBracket)?;
 
                 Ok(Index::new(lhs, exp).into())
             }

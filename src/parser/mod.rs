@@ -41,7 +41,12 @@ impl Parser {
     }
 
     pub fn parse_chunk(&mut self) -> Result<Block, String> {
-        self.parse_block()
+        let block = self.parse_block()?;
+
+        match self.tokens.is_empty() {
+            true => Ok(block),
+            false => Err(format!("Unexpected {:?}, expected EOF", self.tokens.pop_front().unwrap()))
+        }
     }
 
     fn parse_block(&mut self) -> Result<Block, String> {
@@ -68,7 +73,8 @@ impl Parser {
             Token::Name(_) => {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
                 match self.with_rewind(|parser| {
-                    let exp = parser.parse_var_exp()?;
+                    let exp = parser.parse_var()
+                        .map_err(|_| String::new())?;
 
                     // Eq or Comma denotes an assignment expression
                     if parser.next_is_in(&[Token::Comma, Token::Op(Op::Eq)]) {
@@ -84,7 +90,7 @@ impl Parser {
                         let mut vars = vec![var];
 
                         while self.consume_a(Token::Comma) {
-                            vars.push(self.parse_var_exp()?)
+                            vars.push(self.parse_var()?)
                         }
 
                         self.expect(Op::Eq)?;
@@ -313,7 +319,7 @@ impl Parser {
 
     fn parse_exp_prec(&mut self, min_precedence: Precedence) -> Result<Exp, String> {
         let mut lhs = {
-            match get_nud_parselet(self.peek(0)?) {
+            match get_nud_parselet(&self.peek(0)?) {
                 Some(parselet) => {
                     let token = self.consume()?;
 
@@ -327,7 +333,7 @@ impl Parser {
         while min_precedence < self.get_precedence() {
             let token = self.consume()?;
 
-            lhs = match get_led_parselet(token.clone()) {
+            lhs = match get_led_parselet(&token) {
                 Some(parselet) => parselet.parse(self, lhs, token)?,
 
                 None => return Err(format!("Unexpected `{:?}` in expression", token))
@@ -339,19 +345,19 @@ impl Parser {
 
     fn parse_prefix_exp(&mut self) -> Result<Exp, String> {
         let mut lhs = {
-            match get_prefix_nud_parselet(self.peek(0)?) {
-                Some(parselet) => {
-                    let token = self.consume()?;
+            let token = self.consume()?;
 
-                    parselet.parse(self, token)?
+            match get_prefix_nud_parselet(&token) {
+                Some(parselet) => {
+                    parselet.parse(self, token)
                 }
 
-                None => self.parse_var_exp()?
+                None => Err(format!("Unexpected `{:?}`, expected expression", token))
             }
-        };
+        }?;
 
         while let Ok(next) = self.peek(0) {
-            if let Some(parselet) = get_prefix_led_parselet(next) {
+            if let Some(parselet) = get_prefix_led_parselet(&next) {
                 let token = self.consume()?;
 
                 lhs = parselet.parse(self, lhs, token)?
@@ -363,32 +369,19 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_var_exp(&mut self) -> Result<Exp, String> {
-        let mut lhs = {
-            let token = self.peek(0)?;
+    /// Parses a var, basically a more selective prefixexp
+    fn parse_var(&mut self) -> Result<Exp, String> {
+        let exp = self.parse_prefix_exp()?;
 
-            match get_var_nud_parselet(token.clone()) {
-                Some(parselet) => {
-                    let token = self.consume()?;
+        match exp {
+            Exp::Index(_) => Ok(exp),
 
-                    parselet.parse(self, token)?
-                }
+            Exp::Member(_) => Ok(exp),
 
-                None => return Err(format!("Unexpected `{:?}`, expected expression", token))
-            }
-        };
+            Exp::Ref(_) => Ok(exp),
 
-        while let Ok(next) = self.peek(0) {
-            if let Some(parselet) = get_var_led_parselet(next) {
-                let token = self.consume()?;
-
-                lhs = parselet.parse(self, lhs, token)?
-            } else {
-                break;
-            }
+            _ => Err("Unexpected prefixexp, expecting var".to_owned())
         }
-
-        Ok(lhs)
     }
 
     fn parse_function(&mut self) -> Result<Function, String> {
@@ -408,7 +401,7 @@ impl Parser {
 
         let body = self.parse_block()?;
 
-        self.expect(Keyword::End);
+        self.expect(Keyword::End)?;
 
         Ok(Function::new(params, body).into())
     }
@@ -416,10 +409,10 @@ impl Parser {
     // <Helpers>
     fn get_precedence(&self) -> Precedence {
         match self.peek(0) {
-            Ok(token) => match get_led_parselet(token.clone()) {
+            Ok(token) => match get_led_parselet(&token) {
                 Some(parselet) => parselet.get_precedence(),
 
-                None => match get_prefix_led_parselet(token) {
+                None => match get_prefix_led_parselet(&token) {
                     Some(parselet) => parselet.get_precedence(),
 
                     None => Precedence::None
@@ -592,7 +585,7 @@ impl Parser {
     // </Parse Helpers>
 }
 
-fn get_nud_parselet(token: Token) -> Option<&'static dyn Nud> {
+fn get_nud_parselet(token: &Token) -> Option<&'static dyn Nud> {
     match token {
         Token::Ellipsis => Some(&nud::EllipsisParselet),
 
@@ -609,7 +602,7 @@ fn get_nud_parselet(token: Token) -> Option<&'static dyn Nud> {
     }
 }
 
-fn get_led_parselet(token: Token) -> Option<&'static dyn Led> {
+fn get_led_parselet(token: &Token) -> Option<&'static dyn Led> {
     match token {
         Token::Op(Op::Exp) => Some(&led::ExponentiationParselet),
 
@@ -632,36 +625,24 @@ fn get_led_parselet(token: Token) -> Option<&'static dyn Led> {
     }
 }
 
-fn get_prefix_nud_parselet(token: Token) -> Option<&'static dyn Nud> {
+fn get_prefix_nud_parselet(token: &Token) -> Option<&'static dyn Nud> {
     match token {
         Token::LParens => Some(&nud::ParensParselet),
 
-        _ => None
-    }
-}
-
-fn get_prefix_led_parselet(token: Token) -> Option<&'static dyn Led> {
-    match token {
-        Token::LParens | Token::LBrace
-        | Token::Literal(Literal::String(_)) => Some(&led::FunctionCallParselet),
-
-        Token::Op(Op::Colon) => Some(&led::MethodCallParselet),
-
-        _ => None
-    }
-}
-
-fn get_var_nud_parselet(token: Token) -> Option<&'static dyn Nud> {
-    match token {
         Token::Name(_) => Some(&nud::NameParselet),
 
         _ => None
     }
 }
 
-fn get_var_led_parselet(token: Token) -> Option<&'static dyn Led> {
+fn get_prefix_led_parselet(token: &Token) -> Option<&'static dyn Led> {
     match token {
         Token::LBracket | Token::Op(Op::Dot) => Some(&led::AccessParselet),
+
+        Token::LParens | Token::LBrace
+        | Token::Literal(Literal::String(_)) => Some(&led::FunctionCallParselet),
+
+        Token::Op(Op::Colon) => Some(&led::MethodCallParselet),
 
         _ => None
     }
