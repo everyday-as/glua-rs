@@ -40,7 +40,7 @@ pub enum Token {
     #[token("false", |_| Literal::Bool(false))]
     #[token("true", |_| Literal::Bool(true))]
     #[token("nil", |_| Literal::Nil)]
-    #[regex(r"-?[0-9]+(\.[0-9]+)?(e(\+|-)?[0-9]+)?", |lex| {
+    #[regex(r"[0-9]+(\.[0-9]+)?(e(\+|-)?[0-9]+)?", |lex| {
         lex.slice().parse().map(Literal::Number).ok()
     })]
     #[regex("0x[0-9a-fA-F]+", |lex| {
@@ -55,7 +55,11 @@ pub enum Token {
     Literal(Literal),
     #[token("(")]
     LParens,
-    #[regex("[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_owned())]
+    // #[regex("[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_owned())]
+    #[regex(
+        r"[\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}a-zA-Z_][\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}a-zA-Z0-9_]*",
+        |lex| lex.slice().to_owned()
+    )]
     Name(String),
     #[token("+", |_| Op::Add)]
     #[token("and", |_| Op::And)]
