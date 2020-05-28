@@ -45,7 +45,7 @@ pub enum Token {
     })]
     #[regex(r#""([^"\\\n]|\\.)*""#, parse_string)]
     #[regex(r"'([^'\\\n]|\\.)*'", parse_string)]
-    #[regex(r"\[(=*)\[", |lex| Some(Literal::String(parse_multi_line(lex)?)))]
+    #[regex(r"\[(=*)\[", |lex| parse_multi_line(lex).map(Literal::String))]
     Literal(Literal),
     #[token("(")]
     LParens,
