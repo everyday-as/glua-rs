@@ -7,8 +7,8 @@ use logos::internal::{CallbackResult, LexerInternal};
 pub enum Token {
     #[token(",")]
     Comma,
-    #[regex("--[^\n]*", |lex| lex.slice().to_string())]
-    #[regex(r"--\[\[(~(.*--\]\]/.*))--\]\]", |lex| lex.slice().to_string())]
+    #[regex(r"--[^\[][^\n]*", |lex| lex.slice().to_string())]
+    #[regex(r"--\[(=*)\[", parse_multi_line)]
     // GMod specific
     #[regex("//[^\n]*", |lex| lex.slice().to_string())]
     #[regex(r"/\*(~(.*\*/.*))\*/", |lex| lex.slice().to_string())]
@@ -40,9 +40,12 @@ pub enum Token {
     #[token("false", |_| Literal::Bool(false))]
     #[token("true", |_| Literal::Bool(true))]
     #[token("nil", |_| Literal::Nil)]
-    #[regex(r"-?[0-9]+(\.[0-9]+)?(e(\+|-)?[0-9]+)?", |lex| Some(Literal::Number(lex.slice().parse().ok()?)))]
-    #[regex(r#""([^"\\\n]|\\.)*""#, lex_string)]
-    #[regex(r"'([^'\\\n]|\\.)*'", lex_string)]
+    #[regex(r"-?[0-9]+(\.[0-9]+)?(e(\+|-)?[0-9]+)?", |lex| {
+        Some(Literal::Number(lex.slice().parse().ok()?))
+    })]
+    #[regex(r#""([^"\\\n]|\\.)*""#, parse_string)]
+    #[regex(r"'([^'\\\n]|\\.)*'", parse_string)]
+    #[regex(r"\[(=*)\[", |lex| Some(Literal::String(parse_multi_line(lex)?)))]
     Literal(Literal),
     #[token("(")]
     LParens,
@@ -96,7 +99,7 @@ enum StringType {
     SingleQuoted
 }
 
-fn lex_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
+fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
     let slice = lexer.slice();
 
     let pad = match slice.chars().nth(0).unwrap() {
@@ -121,4 +124,31 @@ fn lex_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
     }
 
     Some(Literal::String(value))
+}
+
+fn parse_multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
+    // Offset past comment dashes
+    let offset = match "-" == &lexer.slice()[0..1] {
+        true => 2,
+        false => 0
+    };
+
+    let len = lexer.slice().len();
+
+    let closing = {
+        let mut buf = String::with_capacity(len);
+
+        buf.push(']');
+
+        buf.push_str(&lexer.slice()[(offset + 1)..(len - 1)]);
+
+        buf.push(']');
+
+        buf
+    };
+
+    lexer.remainder()
+        .find(&closing)
+        .map(|i| lexer.bump(i + closing.len()))
+        .map(|_| lexer.slice()[len..lexer.slice().len() - len].to_owned())
 }
