@@ -1,4 +1,7 @@
-use crate::ast::{Exp, Field, Table, Unary, UnOp, Function};
+use crate::ast::Exp;
+use crate::ast::exps::{Table, Unary};
+use crate::ast::exps::table::Field;
+use crate::ast::exps::unary::UnOp;
 use crate::lexer::{Keyword, Literal, Op, Token};
 use crate::parser::parselets::Nud;
 use crate::parser::Parser;
@@ -26,7 +29,7 @@ impl Nud for FunctionParselet {
 pub struct LiteralParselet;
 
 impl Nud for LiteralParselet {
-    fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
+    fn parse(&self, _parser: &mut Parser, token: Token) -> Result<Exp, String> {
         match token {
             Token::Literal(literal) => match literal {
                 Literal::Bool(value) => Ok(Exp::Bool(value)),

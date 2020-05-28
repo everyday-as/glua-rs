@@ -1,7 +1,9 @@
-use crate::parser::parselets::Led;
-use crate::lexer::{Token, Op};
-use crate::ast::{Exp, Binary, BinOp, FunctionCall, Index, Member, MethodCall};
+use crate::ast::Exp;
+use crate::ast::exps::{Binary, FunctionCall, Index, Member, MethodCall};
+use crate::ast::exps::binary::BinOp;
+use crate::lexer::{Op, Token};
 use crate::parser::{Parser, Precedence};
+use crate::parser::parselets::Led;
 
 pub struct AccessParselet;
 

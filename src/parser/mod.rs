@@ -1,10 +1,11 @@
 use std::collections::VecDeque;
 
 use crate::ast::*;
+use crate::ast::exps::*;
 use crate::ast::stats::*;
 use crate::lexer::*;
 use crate::parser::parselets::{Led, led, Nud, nud};
-use crate::parser::parselets::nud::{TableParselet, FunctionParselet};
+use crate::parser::parselets::nud::TableParselet;
 
 mod parselets;
 
@@ -21,13 +22,13 @@ impl Parser {
             tokens: tokens
                 .into_iter()
                 .filter_map(|t| match t {
-                    Token::Whitespace(lines) => {
+                    Token::Whitespace(_) => {
                         // cur_line += lines;
 
                         None
                     }
 
-                    Token::Comment(text) => {
+                    Token::Comment(_) => {
                         // cur_line += text.chars().filter(|c| c == &'\n').count();
 
                         None
@@ -649,7 +650,7 @@ fn get_prefix_led_parselet(token: &Token) -> Option<&'static dyn Led> {
 }
 
 #[derive(Copy, Clone, Debug, PartialOrd, PartialEq)]
-enum Precedence {
+pub enum Precedence {
     None,
     Or,
     And,

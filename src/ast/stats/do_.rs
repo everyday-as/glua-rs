@@ -1,4 +1,4 @@
-use crate::ast::{Exp, Stat, Block};
+use crate::ast::{Stat, Block};
 
 #[derive(Debug)]
 pub struct Do {

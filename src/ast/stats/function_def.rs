@@ -1,10 +1,11 @@
-use crate::ast::{Stat, Exp, Function};
+use crate::ast::exps::Function;
+use crate::ast::Stat;
 
 #[derive(Debug)]
 pub struct FunctionDef {
     local: bool,
     name: String,
-    body: Function
+    body: Function,
 }
 
 impl FunctionDef {
@@ -12,7 +13,7 @@ impl FunctionDef {
         Self {
             local,
             name,
-            body
+            body,
         }
     }
 }
@@ -22,4 +23,3 @@ impl Into<Stat> for FunctionDef {
         Stat::FunctionDef(self)
     }
 }
-

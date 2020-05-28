@@ -9,7 +9,7 @@ pub mod parser;
 #[cfg(test)]
 mod tests {
     use std::fs::File;
-    use std::io::{Read, Write};
+    use std::io::Read;
 
     use crate::lexer::lex;
     use crate::Parser;

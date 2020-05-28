@@ -1,7 +1,6 @@
 use crate::lexer::{Keyword, Literal, Op};
 
 use logos::{Logos, Lexer};
-use logos::internal::{CallbackResult, LexerInternal};
 
 #[derive(Clone, Debug, Logos, PartialEq)]
 pub enum Token {
@@ -100,13 +99,6 @@ pub enum Token {
 
     #[error]
     Error
-}
-
-#[derive(PartialEq)]
-enum StringType {
-    DoubleQuoted,
-    MultiLine,
-    SingleQuoted
 }
 
 fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
