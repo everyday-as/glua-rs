@@ -10,7 +10,7 @@ pub enum Token {
     #[regex(r"--[^\[][^\n]*", |lex| lex.slice().to_string())]
     #[regex(r"--\[(=*)\[", parse_multi_line)]
     // GMod specific
-    #[regex("//[^\n]*", |lex| lex.slice().to_string())]
+    #[regex(r"//[^\n]*", |lex| lex.slice().to_string())]
     #[regex(r"/\*(~(.*\*/.*))\*/", |lex| lex.slice().to_string())]
     Comment(String),
     #[token("...")]
