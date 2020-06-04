@@ -1,11 +1,11 @@
 use crate::ast::{Exp, Stat, Block};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct IfElse {
-    cond: Exp,
-    body: Block,
-    else_ifs: Vec<(Exp, Block)>,
-    else_block: Option<Block>
+    pub cond: Exp,
+    pub body: Block,
+    pub else_ifs: Vec<(Exp, Block)>,
+    pub else_block: Option<Block>
 }
 
 impl IfElse {

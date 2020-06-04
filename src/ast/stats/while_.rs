@@ -1,9 +1,9 @@
 use crate::ast::{Exp, Stat, Block};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct While {
-    body: Block,
-    cond: Exp
+    pub body: Block,
+    pub cond: Exp
 }
 
 impl While {

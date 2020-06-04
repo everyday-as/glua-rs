@@ -1,8 +1,8 @@
 use crate::ast::{Stat, Block};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Do {
-    body: Block
+    pub body: Block
 }
 
 impl Do {

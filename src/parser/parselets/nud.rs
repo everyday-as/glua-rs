@@ -1,10 +1,10 @@
 use crate::ast::Exp;
-use crate::ast::exps::{Table, Unary};
+use crate::ast::exps::{TableConstructor, Unary};
 use crate::ast::exps::table::Field;
 use crate::ast::exps::unary::UnOp;
 use crate::lexer::{Keyword, Literal, Op, Token};
 use crate::parser::parselets::Nud;
-use crate::parser::Parser;
+use crate::parser::{Parser, Precedence};
 
 pub struct EllipsisParselet;
 
@@ -69,14 +69,12 @@ impl Nud for ParensParselet {
     }
 }
 
-pub struct TableParselet;
+pub struct TableConstructorParselet;
 
-impl Nud for TableParselet {
+impl Nud for TableConstructorParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::LBrace, token);
 
-        // Lua table indexes start at 1
-        let mut index = 1f64;
         let mut fields = Vec::new();
 
         while !parser.consume_a(Token::RBrace) {
@@ -86,7 +84,7 @@ impl Nud for TableParselet {
                     parser.consume()?;
                     parser.consume()?;
 
-                    let field = Field::new(Exp::String(name), parser.parse_exp()?);
+                    let field = Field::new(Some(Exp::String(name)), parser.parse_exp()?);
 
                     parser.consume_a(Token::Comma);
 
@@ -107,25 +105,21 @@ impl Nud for TableParselet {
 
                     parser.consume_a(Token::Comma);
 
-                    Field::new(key, value)
+                    Field::new(Some(key), value)
                 }
 
                 // { Exp }
                 _ => {
-                    let key = Exp::Number(index);
-
-                    index += 1f64;
-
                     let value = parser.parse_exp()?;
 
                     parser.consume_a(Token::Comma);
 
-                    Field::new(key, value)
+                    Field::new(None, value)
                 }
             })
         }
 
-        Ok(Table::new(fields).into())
+        Ok(TableConstructor::new(fields).into())
     }
 }
 
@@ -141,6 +135,6 @@ impl Nud for UnaryParselet {
             _ => unreachable!()
         };
 
-        Ok(Unary::new(op, parser.parse_exp()?).into())
+        Ok(Unary::new(op, parser.parse_exp_prec(Precedence::Unary)?).into())
     }
 }

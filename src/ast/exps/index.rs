@@ -1,9 +1,9 @@
 use crate::ast::Exp;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Index {
-    lhs: Box<Exp>,
-    exp: Box<Exp>
+    pub lhs: Box<Exp>,
+    pub exp: Box<Exp>
 }
 
 impl Index {

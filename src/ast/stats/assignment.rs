@@ -1,9 +1,9 @@
 use crate::ast::{Exp, Stat};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Assignment {
-    vars: Vec<Exp>,
-    exps: Vec<Exp>,
+    pub vars: Vec<Exp>,
+    pub exps: Vec<Exp>,
 }
 
 impl Assignment {

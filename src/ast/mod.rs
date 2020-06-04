@@ -6,7 +6,7 @@ use exps::*;
 
 pub type Block = Vec<Stat>;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Stat {
     Assignment(Assignment),
     Break,
@@ -26,7 +26,7 @@ pub enum Stat {
     While(While),
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub enum Exp {
     Binary(Binary),
     Bool(bool),
@@ -39,7 +39,7 @@ pub enum Exp {
     Number(f64),
     Ref(String),
     String(String),
-    Table(Table),
+    Table(TableConstructor),
     Unary(Unary),
     VarArgs
 }

@@ -4,7 +4,7 @@ pub use self::function_call::FunctionCall;
 pub use self::index::Index;
 pub use self::member::Member;
 pub use self::method_call::MethodCall;
-pub use self::table::Table;
+pub use self::table::TableConstructor;
 pub use self::unary::Unary;
 
 pub mod binary;

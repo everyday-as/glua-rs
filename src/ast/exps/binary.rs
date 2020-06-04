@@ -1,13 +1,16 @@
-use crate::ast::Exp;
+use std::fmt::{Display, Formatter};
 
-#[derive(Debug)]
+use crate::ast::Exp;
+use std::fmt;
+
+#[derive(Clone, Debug)]
 pub struct Binary {
-    lhs: Box<Exp>,
-    op: BinOp,
-    rhs: Box<Exp>
+    pub lhs: Box<Exp>,
+    pub op: BinOp,
+    pub rhs: Box<Exp>
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum BinOp {
     Add,
     And,
@@ -39,5 +42,27 @@ impl Binary {
 impl Into<Exp> for Binary {
     fn into(self) -> Exp {
         Exp::Binary(self)
+    }
+}
+
+impl Display for BinOp {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}", match self {
+            BinOp::Add => "+",
+            BinOp::And => "and",
+            BinOp::Concat => "..",
+            BinOp::Div => "/",
+            BinOp::Eq => "==",
+            BinOp::Exp => "^",
+            BinOp::Gt => ">",
+            BinOp::GtEq => ">=",
+            BinOp::Lt => "<",
+            BinOp::LtEq => "<=",
+            BinOp::Mod => "%",
+            BinOp::Mul => "*",
+            BinOp::Ne => "~=",
+            BinOp::Or => "or",
+            BinOp::Sub => "-",
+        })
     }
 }

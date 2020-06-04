@@ -1,9 +1,9 @@
 use crate::ast::{Block, Exp};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Function {
-    params: Vec<String>,
-    body: Block,
+    pub params: Vec<String>,
+    pub body: Block,
 }
 
 impl Function {

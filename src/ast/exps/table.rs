@@ -1,17 +1,17 @@
 use crate::ast::Exp;
 
-#[derive(Debug)]
-pub struct Table {
-    fields: Vec<Field>
+#[derive(Clone, Debug)]
+pub struct TableConstructor {
+    pub fields: Vec<Field>
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Field {
-    key: Box<Exp>,
-    value: Box<Exp>
+    pub key: Option<Box<Exp>>,
+    pub value: Box<Exp>,
 }
 
-impl Table {
+impl TableConstructor {
     pub fn new(fields: Vec<Field>) -> Self {
         Self {
             fields
@@ -19,17 +19,17 @@ impl Table {
     }
 }
 
-impl Into<Exp> for Table {
+impl Into<Exp> for TableConstructor {
     fn into(self) -> Exp {
         Exp::Table(self)
     }
 }
 
 impl Field {
-    pub fn new(key: Exp, value: Exp) -> Self {
+    pub fn new(key: Option<Exp>, value: Exp) -> Self {
         Self {
-            key: Box::new(key),
-            value: Box::new(value)
+            key: key.map(|key| Box::new(key)),
+            value: Box::new(value),
         }
     }
 }

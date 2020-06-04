@@ -9,7 +9,7 @@ pub mod parser;
 #[cfg(test)]
 mod tests {
     use std::fs::File;
-    use std::io::Read;
+    use std::io::{Read, Write};
 
     use crate::lexer::lex;
     use crate::Parser;
@@ -30,7 +30,7 @@ mod tests {
 
         let mut chunk = parser.parse_chunk().unwrap();
 
-        println!("{:#?}", chunk);
+        write!(File::create("test.parsed").unwrap(), "{:#?}", chunk);
     }
 }
 

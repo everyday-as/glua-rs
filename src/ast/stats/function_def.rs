@@ -1,11 +1,11 @@
 use crate::ast::exps::Function;
 use crate::ast::Stat;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FunctionDef {
-    local: bool,
-    name: String,
-    body: Function,
+    pub local: bool,
+    pub name: String,
+    pub body: Function,
 }
 
 impl FunctionDef {

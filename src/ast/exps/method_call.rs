@@ -1,10 +1,10 @@
 use crate::ast::Exp;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MethodCall {
-    lhs: Box<Exp>,
-    name: String,
-    args: Vec<Exp>
+    pub lhs: Box<Exp>,
+    pub name: String,
+    pub args: Vec<Exp>
 }
 
 impl MethodCall {

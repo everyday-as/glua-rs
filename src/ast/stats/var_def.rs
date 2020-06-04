@@ -1,9 +1,9 @@
 use crate::ast::{Exp, Stat};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct VarDef {
-    names: Vec<String>,
-    init_exps: Option<Vec<Exp>>
+    pub names: Vec<String>,
+    pub init_exps: Option<Vec<Exp>>
 }
 
 impl VarDef {

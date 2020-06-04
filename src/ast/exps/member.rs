@@ -1,9 +1,9 @@
 use crate::ast::Exp;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Member {
-    lhs: Box<Exp>,
-    name: String
+    pub lhs: Box<Exp>,
+    pub name: String
 }
 
 impl Member {

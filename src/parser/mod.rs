@@ -5,7 +5,7 @@ use crate::ast::exps::*;
 use crate::ast::stats::*;
 use crate::lexer::*;
 use crate::parser::parselets::{Led, led, Nud, nud};
-use crate::parser::parselets::nud::TableParselet;
+use crate::parser::parselets::nud::TableConstructorParselet;
 
 mod parselets;
 
@@ -63,7 +63,9 @@ impl Parser {
         }
 
         if self.next_is_in(&[Keyword::Break, Keyword::Continue, Keyword::Return]) {
-            stats.push(self.parse_last_stat()?)
+            stats.push(self.parse_last_stat()?);
+
+            self.consume_a(Token::Semicolon);
         }
 
         Ok(stats)
@@ -195,7 +197,7 @@ impl Parser {
 
                                 let exp = self.parse_exp()?;
 
-                                Assignment::new(vec![Exp::Ref(name)], vec![exp])
+                                (name, exp)
                             };
 
                             self.expect(Token::Comma)?;
@@ -492,10 +494,6 @@ impl Parser {
             Ok(result) => Ok(Some(result)),
             Err(err) => match can_rewind(&err) {
                 true => {
-                    if self.rewind_stack.len() > rewind_to {
-                        println!("Rewinding: {:?} ({}<-{})", err, rewind_to, self.rewind_stack.len());
-                    }
-
                     while self.rewind_stack.len() > rewind_to {
                         self.tokens.push_front(self.rewind_stack.pop().unwrap());
                     }
@@ -527,7 +525,7 @@ impl Parser {
 
             // function{ table }
             Token::LBrace => {
-                Ok(vec![TableParselet.parse(self, token)?])
+                Ok(vec![TableConstructorParselet.parse(self, token)?])
             }
 
             // function"string"
@@ -592,7 +590,7 @@ fn get_nud_parselet(token: &Token) -> Option<&'static dyn Nud> {
 
         Token::Keyword(Keyword::Function) => Some(&nud::FunctionParselet),
 
-        Token::LBrace => Some(&nud::TableParselet),
+        Token::LBrace => Some(&nud::TableConstructorParselet),
 
         Token::Literal(_) => Some(&nud::LiteralParselet),
 

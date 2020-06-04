@@ -1,9 +1,9 @@
 use crate::ast::Exp;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct FunctionCall {
-    lhs: Box<Exp>,
-    args: Vec<Exp>
+    pub lhs: Box<Exp>,
+    pub args: Vec<Exp>
 }
 
 impl FunctionCall {

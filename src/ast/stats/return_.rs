@@ -1,8 +1,8 @@
 use crate::ast::{Exp, Stat};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Return {
-    exps: Vec<Exp>
+    pub exps: Vec<Exp>
 }
 
 impl Return {

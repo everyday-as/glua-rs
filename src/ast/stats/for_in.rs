@@ -1,10 +1,10 @@
 use crate::ast::{Stat, Exp, Block};
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ForIn {
-    names: Vec<String>,
-    exps: Vec<Exp>,
-    body: Block
+    pub names: Vec<String>,
+    pub exps: Vec<Exp>,
+    pub body: Block
 }
 
 impl ForIn {
