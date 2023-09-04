@@ -1,10 +1,12 @@
 pub mod stats;
 pub mod exps;
+pub mod node;
 
 use stats::*;
 use exps::*;
+use crate::ast::node::Node;
 
-pub type Block = Vec<Stat>;
+pub type Block = Vec<Node<Stat>>;
 
 #[derive(Clone, Debug)]
 pub enum Stat {

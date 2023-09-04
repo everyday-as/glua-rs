@@ -1,14 +1,15 @@
 use crate::ast::Exp;
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct MethodCall {
-    pub lhs: Box<Exp>,
+    pub lhs: Box<Node<Exp>>,
     pub name: String,
-    pub args: Vec<Exp>
+    pub args: Vec<Node<Exp>>
 }
 
 impl MethodCall {
-    pub fn new(lhs: Exp, name: String, args: Vec<Exp>) -> Self {
+    pub fn new(lhs: Node<Exp>, name: String, args: Vec<Node<Exp>>) -> Self {
         Self {
             lhs: Box::new(lhs),
             name,

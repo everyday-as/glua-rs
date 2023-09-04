@@ -1,7 +1,9 @@
 use std::collections::VecDeque;
+use logos::Span;
 
 use crate::ast::*;
 use crate::ast::exps::*;
+use crate::ast::node::Node;
 use crate::ast::stats::*;
 use crate::lexer::*;
 use crate::parser::parselets::{Led, led, Nud, nud};
@@ -9,19 +11,22 @@ use crate::parser::parselets::nud::TableConstructorParselet;
 
 mod parselets;
 
+pub type SpannedToken = (Token, Span);
+type NodeTracker = usize;
+
 pub struct Parser {
-    tokens: VecDeque<Token>,
-    rewind_stack: Vec<Token>,
+    tokens: VecDeque<SpannedToken>,
+    rewind_stack: Vec<SpannedToken>,
 }
 
 impl Parser {
-    pub fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(tokens: Vec<SpannedToken>) -> Self {
         // let mut cur_line = 1;
 
         Self {
             tokens: tokens
                 .into_iter()
-                .filter_map(|t| match t {
+                .filter_map(|(t, span)| match t {
                     Token::Whitespace(_) => {
                         // cur_line += lines;
 
@@ -34,7 +39,7 @@ impl Parser {
                         None
                     }
 
-                    token => Some(token),
+                    token => Some((token, span)),
                 })
                 .collect(),
             rewind_stack: Vec::new(),
@@ -47,6 +52,22 @@ impl Parser {
         match self.tokens.is_empty() {
             true => Ok(block),
             false => Err(format!("Unexpected {:?}, expected EOF", self.tokens.pop_front().unwrap()))
+        }
+    }
+
+    fn start_node(&self) -> Result<NodeTracker, String> {
+        match self.tokens.front() {
+            Some(token) => Ok(token.1.start as NodeTracker),
+            None => Err("Unexpected EOF".to_owned())
+        }
+    }
+
+    fn produce_node<T>(&self, tracker: NodeTracker, inner: T) -> Node<T> {
+        let end = self.rewind_stack.last().unwrap().1.end;
+
+        Node {
+            span: tracker as usize..end,
+            inner
         }
     }
 
@@ -71,8 +92,9 @@ impl Parser {
         Ok(stats)
     }
 
-    pub fn parse_stat(&mut self) -> Result<Stat, String> {
-        match self.peek(0)? {
+    pub fn parse_stat(&mut self) -> Result<Node<Stat>, String> {
+        let tracker = self.start_node()?;
+        let stat = match self.peek(0)? {
             Token::Name(_) => {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
                 match self.with_rewind(|parser| {
@@ -87,7 +109,7 @@ impl Parser {
                         // TODO: improve this
                         Err(String::new())
                     }
-                }, |e| e.is_empty())? {
+                }, |e| e.is_empty())?.clone() {
                     // `Assignment`
                     Some(var) => {
                         let mut vars = vec![var];
@@ -107,7 +129,7 @@ impl Parser {
                     None => {
                         let token = self.peek(0)?;
 
-                        match self.parse_prefix_exp()? {
+                        match self.parse_prefix_exp()?.inner {
                             Exp::FunctionCall(call) => Ok(Stat::FunctionCall(call)),
 
                             Exp::MethodCall(call) => Ok(Stat::MethodCall(call)),
@@ -290,11 +312,16 @@ impl Parser {
             }
 
             token => Err(format!("Unexpected `{:?}`, expected stat", token))
-        }
+        };
+
+        Ok(self.produce_node(tracker, stat?))
     }
 
-    fn parse_last_stat(&mut self) -> Result<Stat, String> {
-        match self.consume()? {
+    fn parse_last_stat(&mut self) -> Result<Node<Stat>, String> {
+        let tracker = self.start_node()?;
+        let (token, _) = self.consume()?;
+
+        let stat = match token {
             Token::Keyword(Keyword::Return) => {
                 match self.with_rewind(
                     |parser| parser.parse_list(Self::parse_exp),
@@ -313,20 +340,26 @@ impl Parser {
             token => Err(
                 format!("Unexpected `{:?}`, expected return, continue or break", token)
             )
-        }
+        };
+
+        Ok(self.produce_node(tracker, stat?))
     }
 
-    pub fn parse_exp(&mut self) -> Result<Exp, String> {
+    pub fn parse_exp(&mut self) -> Result<Node<Exp>, String> {
         self.parse_exp_prec(Precedence::None)
     }
 
-    fn parse_exp_prec(&mut self, min_precedence: Precedence) -> Result<Exp, String> {
+    fn parse_exp_prec(&mut self, min_precedence: Precedence) -> Result<Node<Exp>, String> {
         let mut lhs = {
             match get_nud_parselet(&self.peek(0)?) {
                 Some(parselet) => {
-                    let token = self.consume()?;
+                    let tracker = self.start_node()?;
 
-                    parselet.parse(self, token)?
+                    let (token, _) = self.consume()?;
+
+                    let exp = parselet.parse(self, token)?;
+
+                    self.produce_node(tracker, exp)
                 }
 
                 None => self.parse_prefix_exp()?
@@ -334,10 +367,16 @@ impl Parser {
         };
 
         while min_precedence < self.get_precedence() {
-            let token = self.consume()?;
+            let tracker = self.start_node()?;
+
+            let (token, _) = self.consume()?;
 
             lhs = match get_led_parselet(&token) {
-                Some(parselet) => parselet.parse(self, lhs, token)?,
+                Some(parselet) => {
+                    let exp = parselet.parse(self, lhs, token)?;
+
+                    self.produce_node(tracker, exp)
+                },
 
                 None => return Err(format!("Unexpected `{:?}` in expression", token))
             }
@@ -346,24 +385,32 @@ impl Parser {
         Ok(lhs)
     }
 
-    fn parse_prefix_exp(&mut self) -> Result<Exp, String> {
+    fn parse_prefix_exp(&mut self) -> Result<Node<Exp>, String> {
         let mut lhs = {
-            let token = self.consume()?;
+            let tracker = self.start_node()?;
+
+            let (token, _) = self.consume()?;
 
             match get_prefix_nud_parselet(&token) {
                 Some(parselet) => {
-                    parselet.parse(self, token)
+                    let exp = parselet.parse(self, token)?;
+
+                    Ok(self.produce_node(tracker, exp))
                 }
 
                 None => Err(format!("Unexpected `{:?}`, expected expression", token))
-            }
-        }?;
+            }?
+        };
 
         while let Ok(next) = self.peek(0) {
             if let Some(parselet) = get_prefix_led_parselet(&next) {
-                let token = self.consume()?;
+                let tracker = self.start_node()?;
 
-                lhs = parselet.parse(self, lhs, token)?
+                let (token, _) = self.consume()?;
+
+                let exp = parselet.parse(self, lhs, token)?;
+
+                lhs = self.produce_node(tracker, exp)
             } else {
                 break;
             }
@@ -373,10 +420,10 @@ impl Parser {
     }
 
     /// Parses a var, basically a more selective prefixexp
-    fn parse_var(&mut self) -> Result<Exp, String> {
+    fn parse_var(&mut self) -> Result<Node<Exp>, String> {
         let exp = self.parse_prefix_exp()?;
 
-        match exp {
+        match exp.inner {
             Exp::Index(_) => Ok(exp),
 
             Exp::Member(_) => Ok(exp),
@@ -428,13 +475,13 @@ impl Parser {
 
     fn peek(&self, n: usize) -> Result<Token, String> {
         match self.tokens.iter().nth(n) {
-            Some(token) => Ok(token.clone()),
+            Some((token, _)) => Ok(token.clone()),
 
             None => Err("Unexpected EOF".to_owned())
         }
     }
 
-    fn consume(&mut self) -> Result<Token, String> {
+    fn consume(&mut self) -> Result<SpannedToken, String> {
         self.tokens.pop_front()
             .ok_or("Unexpected EOF".to_owned())
             .and_then(|token| {
@@ -445,7 +492,7 @@ impl Parser {
     }
 
     fn expect<E>(&mut self, expected: E) -> Result<(), String> where E: Into<Token> {
-        let (expected, got) = (expected.into(), self.consume()?);
+        let (expected, (got, _)) = (expected.into(), self.consume()?);
 
         if got == expected {
             Ok(())
@@ -509,7 +556,9 @@ impl Parser {
 
     // <Parse Helpers>
     /// Parse function / method arguments
-    fn parse_args(&mut self, token: Token) -> Result<Vec<Exp>, String> {
+    fn parse_args(&mut self, token: Token) -> Result<Vec<Node<Exp>>, String> {
+        let tracker = self.start_node()?;
+
         match token {
             // function(arg, arg2)
             Token::LParens => match self.consume_a(Token::RParens) {
@@ -525,12 +574,16 @@ impl Parser {
 
             // function{ table }
             Token::LBrace => {
-                Ok(vec![TableConstructorParselet.parse(self, token)?])
+                let exp = TableConstructorParselet.parse(self, token)?;
+
+                Ok(vec![self.produce_node(tracker, exp)])
             }
 
             // function"string"
             Token::Literal(Literal::String(arg)) => {
-                Ok(vec![Exp::String(arg)])
+                let exp = self.produce_node(tracker, Exp::String(arg));
+
+                Ok(vec![exp])
             }
 
             token => Err(format!("Unexpected {:?}, expected args", token))
@@ -539,7 +592,9 @@ impl Parser {
 
     /// Parse a name
     fn parse_name(&mut self) -> Result<String, String> {
-        match self.consume()? {
+        let (token, _) = self.consume()?;
+
+        match token {
             Token::Name(name) => Ok(name),
 
             token => Err(format!("Unexpected `{:?}`, expected name", token))

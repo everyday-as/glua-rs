@@ -2,11 +2,12 @@ use std::fmt::{Display, Formatter};
 use std::fmt;
 
 use crate::ast::Exp;
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Unary {
     pub op: UnOp,
-    pub exp: Box<Exp>,
+    pub exp: Box<Node<Exp>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -17,7 +18,7 @@ pub enum UnOp {
 }
 
 impl Unary {
-    pub fn new(op: UnOp, exp: Exp) -> Self {
+    pub fn new(op: UnOp, exp: Node<Exp>) -> Self {
         Self {
             op,
             exp: Box::new(exp),

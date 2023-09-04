@@ -1,4 +1,5 @@
 use crate::ast::Exp;
+use crate::ast::node::Node;
 use crate::lexer::Token;
 use crate::parser::{Parser, Precedence};
 
@@ -12,6 +13,6 @@ pub trait Nud {
 
 // Left-denotation rule
 pub trait Led {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String>;
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String>;
     fn get_precedence(&self) -> Precedence;
 }

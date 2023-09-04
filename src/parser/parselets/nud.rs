@@ -65,7 +65,7 @@ impl Nud for ParensParselet {
 
         parser.expect(Token::RParens)?;
 
-        Ok(exp)
+        Ok(exp.inner)
     }
 }
 
@@ -81,10 +81,12 @@ impl Nud for TableConstructorParselet {
             fields.push(match parser.peek(0)? {
                 // { name = Exp }
                 Token::Name(name) if parser.peek(1) == Ok(Token::Op(Op::Eq)) => {
+                    let tracker = parser.start_node()?;
+
                     parser.consume()?;
                     parser.consume()?;
 
-                    let field = Field::new(Some(Exp::String(name)), parser.parse_exp()?);
+                    let field = Field::new(Some(parser.produce_node(tracker, Exp::String(name))), parser.parse_exp()?);
 
                     parser.consume_a(Token::Comma);
 

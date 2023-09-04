@@ -1,15 +1,16 @@
 use crate::ast::{Exp, Stat, Block};
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct IfElse {
-    pub cond: Exp,
+    pub cond: Node<Exp>,
     pub body: Block,
-    pub else_ifs: Vec<(Exp, Block)>,
+    pub else_ifs: Vec<(Node<Exp>, Block)>,
     pub else_block: Option<Block>
 }
 
 impl IfElse {
-    pub fn new(cond: Exp, body: Block, else_ifs: Vec<(Exp, Block)>, else_block: Option<Block>) -> Self {
+    pub fn new(cond: Node<Exp>, body: Block, else_ifs: Vec<(Node<Exp>, Block)>, else_block: Option<Block>) -> Self {
         Self {
             cond,
             body,

@@ -1,6 +1,7 @@
 use crate::ast::Exp;
 use crate::ast::exps::{Binary, FunctionCall, Index, Member, MethodCall};
 use crate::ast::exps::binary::BinOp;
+use crate::ast::node::Node;
 use crate::lexer::{Op, Token};
 use crate::parser::{Parser, Precedence};
 use crate::parser::parselets::Led;
@@ -8,7 +9,7 @@ use crate::parser::parselets::Led;
 pub struct AccessParselet;
 
 impl Led for AccessParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         match token {
             // foo[Exp]
             Token::LBracket => {
@@ -36,7 +37,7 @@ impl Led for AccessParselet {
 pub struct AdditiveParselet;
 
 impl Led for AdditiveParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         let op = match token {
             Token::Op(Op::Add) => BinOp::Add,
             Token::Op(Op::Sub) => BinOp::Sub,
@@ -56,7 +57,7 @@ impl Led for AdditiveParselet {
 pub struct AndParselet;
 
 impl Led for AndParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::And), token);
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
@@ -72,7 +73,7 @@ impl Led for AndParselet {
 pub struct ConcatParselet;
 
 impl Led for ConcatParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::DotDot), token);
 
         // Right associative so pass one lower precedence level than us
@@ -89,7 +90,7 @@ impl Led for ConcatParselet {
 pub struct ComparativeParselet;
 
 impl Led for ComparativeParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         let op = match token {
             Token::Op(Op::EqEq) => BinOp::Eq,
             Token::Op(Op::Gt) => BinOp::Gt,
@@ -113,7 +114,7 @@ impl Led for ComparativeParselet {
 pub struct ExponentiationParselet;
 
 impl Led for ExponentiationParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::Exp), token);
 
         // Right associative so pass one lower precedence level than us
@@ -130,7 +131,7 @@ impl Led for ExponentiationParselet {
 pub struct FunctionCallParselet;
 
 impl Led for FunctionCallParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         let args = parser.parse_args(token)?;
 
         Ok(FunctionCall::new(lhs, args).into())
@@ -144,13 +145,13 @@ impl Led for FunctionCallParselet {
 pub struct MethodCallParselet;
 
 impl Led for MethodCallParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::Colon), token);
 
         let name = parser.parse_name()?;
 
         let args = {
-            let token = parser.consume()?;
+            let (token, _) = parser.consume()?;
 
             parser.parse_args(token)?
         };
@@ -166,7 +167,7 @@ impl Led for MethodCallParselet {
 pub struct MultiplicativeParselet;
 
 impl Led for MultiplicativeParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         let op = match token {
             Token::Op(Op::Mod) => BinOp::Mod,
             Token::Op(Op::Mul) => BinOp::Mul,
@@ -187,7 +188,7 @@ impl Led for MultiplicativeParselet {
 pub struct OrParselet;
 
 impl Led for OrParselet {
-    fn parse(&self, parser: &mut Parser, lhs: Exp, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::Or), token);
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;

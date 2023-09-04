@@ -1,3 +1,5 @@
+extern crate core;
+
 pub use self::lexer::lex;
 pub use self::parser::Parser;
 
@@ -28,7 +30,7 @@ mod tests {
 
         let mut parser = Parser::new(lex(&lua).unwrap());
 
-        let mut chunk = parser.parse_chunk().unwrap();
+        let chunk = parser.parse_chunk().unwrap();
 
         write!(File::create("test.parsed").unwrap(), "{:#?}", chunk);
     }

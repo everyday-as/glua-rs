@@ -1,13 +1,14 @@
 use crate::ast::Exp;
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Member {
-    pub lhs: Box<Exp>,
+    pub lhs: Box<Node<Exp>>,
     pub name: String
 }
 
 impl Member {
-    pub fn new(lhs: Exp, name: String) -> Self {
+    pub fn new(lhs: Node<Exp>, name: String) -> Self {
         Self {
             lhs: Box::new(lhs),
             name

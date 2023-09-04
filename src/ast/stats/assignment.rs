@@ -1,13 +1,14 @@
 use crate::ast::{Exp, Stat};
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Assignment {
-    pub vars: Vec<Exp>,
-    pub exps: Vec<Exp>,
+    pub vars: Vec<Node<Exp>>,
+    pub exps: Vec<Node<Exp>>,
 }
 
 impl Assignment {
-    pub fn new(vars: Vec<Exp>, exps: Vec<Exp>) -> Self {
+    pub fn new(vars: Vec<Node<Exp>>, exps: Vec<Node<Exp>>) -> Self {
         Self {
             vars,
             exps

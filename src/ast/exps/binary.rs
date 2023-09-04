@@ -2,12 +2,13 @@ use std::fmt::{Display, Formatter};
 
 use crate::ast::Exp;
 use std::fmt;
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Binary {
-    pub lhs: Box<Exp>,
+    pub lhs: Box<Node<Exp>>,
     pub op: BinOp,
-    pub rhs: Box<Exp>
+    pub rhs: Box<Node<Exp>>
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,7 +31,7 @@ pub enum BinOp {
 }
 
 impl Binary {
-    pub fn new(lhs: Exp, op: BinOp, rhs: Exp) -> Self {
+    pub fn new(lhs: Node<Exp>, op: BinOp, rhs: Node<Exp>) -> Self {
         Self {
             lhs: Box::new(lhs),
             op,

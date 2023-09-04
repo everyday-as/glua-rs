@@ -1,13 +1,14 @@
 use crate::ast::Exp;
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Index {
-    pub lhs: Box<Exp>,
-    pub exp: Box<Exp>
+    pub lhs: Box<Node<Exp>>,
+    pub exp: Box<Node<Exp>>
 }
 
 impl Index {
-    pub fn new(lhs: Exp, exp: Exp) -> Self {
+    pub fn new(lhs: Node<Exp>, exp: Node<Exp>) -> Self {
         Self {
             lhs: Box::new(lhs),
             exp: Box::new(exp)

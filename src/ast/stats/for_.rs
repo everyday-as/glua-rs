@@ -1,16 +1,16 @@
 use crate::ast::{Stat, Exp, Block};
-use crate::ast::stats::VarDef;
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct For {
-    pub init: (String, Exp),
-    pub test: Exp,
-    pub update: Option<Exp>,
+    pub init: (String, Node<Exp>),
+    pub test: Node<Exp>,
+    pub update: Option<Node<Exp>>,
     pub body: Block
 }
 
 impl For {
-    pub fn new(init: (String, Exp), test: Exp, update: Option<Exp>, body: Block) -> Self {
+    pub fn new(init: (String, Node<Exp>), test: Node<Exp>, update: Option<Node<Exp>>, body: Block) -> Self {
         Self {
             init,
             test,
