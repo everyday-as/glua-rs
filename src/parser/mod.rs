@@ -1,5 +1,5 @@
 use std::collections::VecDeque;
-use logos::Span;
+pub use logos::Span;
 
 use crate::ast::*;
 use crate::ast::exps::*;
