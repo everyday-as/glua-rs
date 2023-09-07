@@ -1,4 +1,5 @@
 use crate::ast::{Block, Exp};
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Function {
@@ -15,7 +16,7 @@ impl Function {
     }
 }
 
-impl Into<Exp> for Function {
+impl Into<Exp> for Node<Function> {
     fn into(self) -> Exp {
         Exp::Function(self)
     }

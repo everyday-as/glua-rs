@@ -1,3 +1,6 @@
+pub mod renderer;
+
+use logos::Span;
 use crate::ast::exps::{Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary};
 use crate::ast::{Block, Exp, Stat};
 use crate::ast::node::Node;
@@ -9,43 +12,43 @@ pub trait Visitor {
         walk_stat(self, v);
     }
 
-    fn visit_assignment_stat(&mut self, v: &Assignment) {
+    fn visit_assignment_stat(&mut self, v: &Node<Assignment>) {
         walk_assignment_stat(self, &v);
     }
 
-    fn visit_do_stat(&mut self, v: &Do) {
+    fn visit_do_stat(&mut self, v: &Node<Do>) {
         walk_do_stat(self, &v);
     }
 
-    fn visit_for_stat(&mut self, v: &For) {
+    fn visit_for_stat(&mut self, v: &Node<For>) {
         walk_for_stat(self, &v);
     }
 
-    fn visit_for_in_stat(&mut self, v: &ForIn) {
+    fn visit_for_in_stat(&mut self, v: &Node<ForIn>) {
         walk_for_in_stat(self, &v);
     }
 
-    fn visit_function_def_stat(&mut self, v: &FunctionDef) {
+    fn visit_function_def_stat(&mut self, v: &Node<FunctionDef>) {
         walk_function_def_stat(self, &v);
     }
 
-    fn visit_if_else_stat(&mut self, v: &IfElse) {
+    fn visit_if_else_stat(&mut self, v: &Node<IfElse>) {
         walk_if_else_stat(self, &v);
     }
 
-    fn visit_repeat_until_stat(&mut self, v: &RepeatUntil) {
+    fn visit_repeat_until_stat(&mut self, v: &Node<RepeatUntil>) {
         walk_repeat_until_stat(self, &v);
     }
 
-    fn visit_return_stat(&mut self, v: &Return) {
+    fn visit_return_stat(&mut self, v: &Node<Return>) {
         walk_return_stat(self, &v);
     }
 
-    fn visit_var_def_stat(&mut self, v: &VarDef) {
+    fn visit_var_def_stat(&mut self, v: &Node<VarDef>) {
         walk_var_def_stat(self, &v);
     }
 
-    fn visit_while_stat(&mut self, v: &While) {
+    fn visit_while_stat(&mut self, v: &Node<While>) {
         walk_while_stat(self, &v);
     }
 
@@ -60,48 +63,48 @@ pub trait Visitor {
         walk_exp(self, &v);
     }
 
-    fn visit_binary_exp(&mut self, v: &Binary) {
+    fn visit_binary_exp(&mut self, v: &Node<Binary>) {
         walk_binary_exp(self, &v);
     }
 
-    fn visit_function_exp(&mut self, v: &Function) {
+    fn visit_function_exp(&mut self, v: &Node<Function>) {
         walk_function_exp(self, &v);
     }
 
-    fn visit_index_exp(&mut self, v: &Index) {
+    fn visit_index_exp(&mut self, v: &Node<Index>) {
         walk_index_exp(self, &v);
     }
 
-    fn visit_member_exp(&mut self, v: &Member) {
+    fn visit_member_exp(&mut self, v: &Node<Member>) {
         walk_member_exp(self, &v);
     }
 
-    fn visit_table_exp(&mut self, v: &TableConstructor) {
+    fn visit_table_exp(&mut self, v: &Node<TableConstructor>) {
         walk_table_exp(self, &v);
     }
 
-    fn visit_unary_exp(&mut self, v: &Unary) {
+    fn visit_unary_exp(&mut self, v: &Node<Unary>) {
         walk_unary_exp(self, &v);
     }
 
-    fn visit_bool_exp(&mut self, v: &bool) {}
+    fn visit_bool_exp(&mut self, v: &Node<bool>) {}
 
     fn visit_nil_exp(&mut self) {}
 
-    fn visit_number_exp(&mut self, v: &f64) {}
+    fn visit_number_exp(&mut self, v: &Node<f64>) {}
 
-    fn visit_ref_exp(&mut self, v: &String) {}
+    fn visit_ref_exp(&mut self, v: &Node<String>) {}
 
-    fn visit_string_exp(&mut self, v: &String) {}
+    fn visit_string_exp(&mut self, v: &Node<String>) {}
 
     fn visit_var_args_exp(&mut self) {}
 
     // Common
-    fn visit_function_call(&mut self, v: &FunctionCall) {
+    fn visit_function_call(&mut self, v: &Node<FunctionCall>) {
         walk_function_call(self, &v);
     }
 
-    fn visit_method_call(&mut self, v: &MethodCall) {
+    fn visit_method_call(&mut self, v: &Node<MethodCall>) {
         walk_method_call(self, &v);
     }
 }
@@ -131,16 +134,16 @@ pub fn walk_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Stat>) {
     };
 }
 
-pub fn walk_assignment_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Assignment) {
+pub fn walk_assignment_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Assignment>) {
     v.exps.iter().for_each(|e| visitor.visit_exp(&e));
     v.vars.iter().for_each(|e| visitor.visit_exp(&e));
 }
 
-pub fn walk_do_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Do) {
+pub fn walk_do_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Do>) {
     v.body.iter().for_each(|s| visitor.visit_stat(&s));
 }
 
-pub fn walk_for_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &For) {
+pub fn walk_for_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<For>) {
     v.body.iter().for_each(|s| visitor.visit_stat(&s));
     visitor.visit_exp(&v.init.1);
     visitor.visit_exp(&v.test);
@@ -150,16 +153,16 @@ pub fn walk_for_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &For) {
     }
 }
 
-pub fn walk_for_in_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &ForIn) {
+pub fn walk_for_in_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<ForIn>) {
     v.body.iter().for_each(|s| visitor.visit_stat(&s));
     v.exps.iter().for_each(|e| visitor.visit_exp(&e));
 }
 
-pub fn walk_function_def_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &FunctionDef) {
+pub fn walk_function_def_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<FunctionDef>) {
     v.body.body.iter().for_each(|s| visitor.visit_stat(&s));
 }
 
-pub fn walk_if_else_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &IfElse) {
+pub fn walk_if_else_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<IfElse>) {
     v.body.iter().for_each(|s| visitor.visit_stat(&s));
     visitor.visit_exp(&v.cond);
 
@@ -173,22 +176,22 @@ pub fn walk_if_else_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &IfElse) {
     }
 }
 
-pub fn walk_repeat_until_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &RepeatUntil) {
+pub fn walk_repeat_until_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<RepeatUntil>) {
     v.body.iter().for_each(|s| visitor.visit_stat(&s));
     visitor.visit_exp(&v.cond);
 }
 
-pub fn walk_return_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Return) {
+pub fn walk_return_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Return>) {
     v.exps.iter().for_each(|e| visitor.visit_exp(&e));
 }
 
-pub fn walk_var_def_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &VarDef) {
+pub fn walk_var_def_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<VarDef>) {
     if let Some(init_exps) = &v.init_exps {
         init_exps.iter().for_each(|e| visitor.visit_exp(&e));
     }
 }
 
-pub fn walk_while_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &While) {
+pub fn walk_while_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<While>) {
     v.body.iter().for_each(|s| visitor.visit_stat(&s));
     visitor.visit_exp(&v.cond);
 }
@@ -213,25 +216,25 @@ pub fn walk_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Exp>) {
     };
 }
 
-pub fn walk_binary_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Binary) {
+pub fn walk_binary_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Binary>) {
     visitor.visit_exp(&v.lhs);
     visitor.visit_exp(&v.rhs);
 }
 
-pub fn walk_function_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Function) {
+pub fn walk_function_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Function>) {
     v.body.iter().for_each(|s| visitor.visit_stat(&s));
 }
 
-pub fn walk_index_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Index) {
+pub fn walk_index_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Index>) {
     visitor.visit_exp(&v.lhs);
     visitor.visit_exp(&v.exp);
 }
 
-pub fn walk_member_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Member) {
+pub fn walk_member_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Member>) {
     visitor.visit_exp(&v.lhs);
 }
 
-pub fn walk_table_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &TableConstructor) {
+pub fn walk_table_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<TableConstructor>) {
     v.fields.iter().for_each(|f| {
         visitor.visit_exp(&f.value);
 
@@ -241,17 +244,17 @@ pub fn walk_table_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &TableConstructor
     })
 }
 
-pub fn walk_unary_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Unary) {
+pub fn walk_unary_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Unary>) {
     visitor.visit_exp(&v.exp);
 }
 
 // Common walkers
-pub fn walk_function_call<V: Visitor + ?Sized>(visitor: &mut V, v: &FunctionCall) {
+pub fn walk_function_call<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<FunctionCall>) {
     v.args.iter().for_each(|e| visitor.visit_exp(&e));
     visitor.visit_exp(&v.lhs);
 }
 
-pub fn walk_method_call<V: Visitor + ?Sized>(visitor: &mut V, v: &MethodCall) {
+pub fn walk_method_call<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<MethodCall>) {
     v.args.iter().for_each(|e| visitor.visit_exp(&e));
     visitor.visit_exp(&v.lhs);
 }

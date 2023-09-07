@@ -1,49 +1,49 @@
 pub mod stats;
 pub mod exps;
 pub mod node;
-pub mod visit;
+pub mod visitors;
 
 use stats::*;
 use exps::*;
 use crate::ast::node::Node;
-use visit::*;
+use visitors::*;
 
 pub type Block = Vec<Node<Stat>>;
 
 #[derive(Clone, Debug)]
 pub enum Stat {
-    Assignment(Assignment),
+    Assignment(Node<Assignment>),
     Break,
     /// GMod specific continue statement
     Continue,
-    Do(Do),
-    For(For),
-    ForIn(ForIn),
-    FunctionCall(FunctionCall),
-    FunctionDef(FunctionDef),
-    IfElse(IfElse),
-    MethodCall(MethodCall),
+    Do(Node<Do>),
+    For(Node<For>),
+    ForIn(Node<ForIn>),
+    FunctionCall(Node<FunctionCall>),
+    FunctionDef(Node<FunctionDef>),
+    IfElse(Node<IfElse>),
+    MethodCall(Node<MethodCall>),
     None,
-    RepeatUntil(RepeatUntil),
-    Return(Return),
-    VarDef(VarDef),
-    While(While),
+    RepeatUntil(Node<RepeatUntil>),
+    Return(Node<Return>),
+    VarDef(Node<VarDef>),
+    While(Node<While>),
 }
 
 #[derive(Clone, Debug)]
 pub enum Exp {
-    Binary(Binary),
-    Bool(bool),
-    Function(Function),
-    FunctionCall(FunctionCall),
-    Index(Index),
-    Member(Member),
-    MethodCall(MethodCall),
+    Binary(Node<Binary>),
+    Bool(Node<bool>),
+    Function(Node<Function>),
+    FunctionCall(Node<FunctionCall>),
+    Index(Node<Index>),
+    Member(Node<Member>),
+    MethodCall(Node<MethodCall>),
     Nil,
-    Number(f64),
-    Ref(String),
-    String(String),
-    Table(TableConstructor),
-    Unary(Unary),
+    Number(Node<f64>),
+    Ref(Node<String>),
+    String(Node<String>),
+    Table(Node<TableConstructor>),
+    Unary(Node<Unary>),
     VarArgs
 }

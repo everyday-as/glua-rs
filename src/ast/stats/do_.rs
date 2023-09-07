@@ -1,4 +1,5 @@
 use crate::ast::{Stat, Block};
+use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Do {
@@ -13,7 +14,7 @@ impl Do {
     }
 }
 
-impl Into<Stat> for Do {
+impl Into<Stat> for Node<Do> {
     fn into(self) -> Stat {
         Stat::Do(self)
     }

@@ -18,7 +18,7 @@ impl ForIn {
     }
 }
 
-impl Into<Stat> for ForIn {
+impl Into<Stat> for Node<ForIn> {
     fn into(self) -> Stat {
         Stat::ForIn(self)
     }

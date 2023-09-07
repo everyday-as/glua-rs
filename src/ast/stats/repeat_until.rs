@@ -16,7 +16,7 @@ impl RepeatUntil {
     }
 }
 
-impl Into<Stat> for RepeatUntil {
+impl Into<Stat> for Node<RepeatUntil> {
     fn into(self) -> Stat {
         Stat::RepeatUntil(self)
     }

@@ -16,7 +16,7 @@ impl Index {
     }
 }
 
-impl Into<Exp> for Index {
+impl Into<Exp> for Node<Index> {
     fn into(self) -> Exp {
         Exp::Index(self)
     }

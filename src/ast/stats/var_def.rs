@@ -16,7 +16,7 @@ impl VarDef {
     }
 }
 
-impl Into<Stat> for VarDef {
+impl Into<Stat> for Node<VarDef> {
     fn into(self) -> Stat {
         Stat::VarDef(self)
     }

@@ -29,13 +29,15 @@ impl Nud for FunctionParselet {
 pub struct LiteralParselet;
 
 impl Nud for LiteralParselet {
-    fn parse(&self, _parser: &mut Parser, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
+        let tracker = parser.start_node()?;
+
         match token {
             Token::Literal(literal) => match literal {
-                Literal::Bool(value) => Ok(Exp::Bool(value)),
+                Literal::Bool(value) => Ok(Exp::Bool(parser.produce_node(tracker, value))),
                 Literal::Nil => Ok(Exp::Nil),
-                Literal::Number(value) => Ok(Exp::Number(value)),
-                Literal::String(value) => Ok(Exp::String(value))
+                Literal::Number(value) => Ok(Exp::Number(parser.produce_node(tracker, value))),
+                Literal::String(value) => Ok(Exp::String(parser.produce_node(tracker, value)))
             },
 
             _ => unreachable!()
@@ -46,9 +48,11 @@ impl Nud for LiteralParselet {
 pub struct NameParselet;
 
 impl Nud for NameParselet {
-    fn parse(&self, _parser: &mut Parser, token: Token) -> Result<Exp, String> {
+    fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
+        let tracker = parser.start_node()?;
+
         if let Token::Name(name) = token {
-            return Ok(Exp::Ref(name));
+            return Ok(Exp::Ref(parser.produce_node(tracker, name)));
         }
 
         unreachable!();
@@ -86,7 +90,7 @@ impl Nud for TableConstructorParselet {
                     parser.consume()?;
                     parser.consume()?;
 
-                    let field = Field::new(Some(parser.produce_node(tracker, Exp::String(name))), parser.parse_exp()?);
+                    let field = Field::new(Some(parser.produce_node(tracker, Exp::String(parser.produce_node(tracker, name)))), parser.parse_exp()?);
 
                     parser.consume_a(Token::Comma);
 
@@ -121,7 +125,9 @@ impl Nud for TableConstructorParselet {
             })
         }
 
-        Ok(TableConstructor::new(fields).into())
+        let tracker = parser.start_node()?;
+
+        Ok(parser.produce_node(tracker, TableConstructor::new(fields)).into())
     }
 }
 
@@ -129,6 +135,8 @@ pub struct UnaryParselet;
 
 impl Nud for UnaryParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
+        let tracker = parser.start_node()?;
+
         let op = match token {
             Token::Op(Op::Len) => UnOp::Len,
             Token::Op(Op::Not) => UnOp::Not,
@@ -137,6 +145,7 @@ impl Nud for UnaryParselet {
             _ => unreachable!()
         };
 
-        Ok(Unary::new(op, parser.parse_exp_prec(Precedence::Unary)?).into())
+        let unary = Unary::new(op, parser.parse_exp_prec(Precedence::Unary)?);
+        Ok(parser.produce_node(tracker, unary).into())
     }
 }

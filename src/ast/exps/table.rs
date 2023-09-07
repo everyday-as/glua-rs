@@ -20,7 +20,7 @@ impl TableConstructor {
     }
 }
 
-impl Into<Exp> for TableConstructor {
+impl Into<Exp> for Node<TableConstructor> {
     fn into(self) -> Exp {
         Exp::Table(self)
     }

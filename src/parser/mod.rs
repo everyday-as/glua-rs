@@ -112,6 +112,8 @@ impl Parser {
                 }, |e| e.is_empty())?.clone() {
                     // `Assignment`
                     Some(var) => {
+                        let tracker = self.start_node()?;
+
                         let mut vars = vec![var];
 
                         while self.consume_a(Token::Comma) {
@@ -122,7 +124,7 @@ impl Parser {
 
                         let exps = self.parse_list(Self::parse_exp)?;
 
-                        Ok(Assignment::new(vars, exps).into())
+                        Ok(self.produce_node(tracker, Assignment::new(vars, exps)).into())
                     }
 
                     // `FunctionCall`
@@ -146,15 +148,19 @@ impl Parser {
                 match keyword {
                     // do block end
                     Keyword::Do => {
+                        let tracker = self.start_node()?;
+
                         let body = self.parse_block()?;
 
                         self.expect(Keyword::End)?;
 
-                        Ok(Do::new(body).into())
+                        Ok(self.produce_node(tracker, Do::new(body)).into())
                     }
 
                     // while exp do block end
                     Keyword::While => {
+                        let tracker = self.start_node()?;
+
                         let cond = self.parse_exp()?;
 
                         self.expect(Keyword::Do)?;
@@ -163,11 +169,13 @@ impl Parser {
 
                         self.expect(Keyword::End)?;
 
-                        Ok(While::new(cond, body).into())
+                        Ok(self.produce_node(tracker, While::new(cond, body)).into())
                     }
 
                     // repeat block until exp
                     Keyword::Repeat => {
+                        let tracker = self.start_node()?;
+
                         let body = self.parse_block()?;
 
                         self.expect(Keyword::Until)?;
@@ -176,11 +184,13 @@ impl Parser {
 
                         self.expect(Keyword::End)?;
 
-                        Ok(RepeatUntil::new(body, cond).into())
+                        Ok(self.produce_node(tracker, RepeatUntil::new(body, cond)).into())
                     }
 
                     // if exp then block {elseif exp then block} [else block] end
                     Keyword::If => {
+                        let tracker = self.start_node()?;
+
                         let cond = self.parse_exp()?;
 
                         self.expect(Keyword::Then)?;
@@ -206,12 +216,14 @@ impl Parser {
 
                         self.expect(Keyword::End)?;
 
-                        Ok(IfElse::new(cond, body, else_ifs, else_block).into())
+                        Ok(self.produce_node(tracker, IfElse::new(cond, body, else_ifs, else_block)).into())
                     }
 
                     Keyword::For => match self.peek(1)? {
                         // for Name `=´ exp `,´ exp [`,´ exp] do block end
                         Token::Op(Op::Eq) => {
+                            let tracker = self.start_node()?;
+
                             let init = {
                                 let name = self.parse_name()?;
 
@@ -237,11 +249,13 @@ impl Parser {
 
                             self.expect(Keyword::End)?;
 
-                            Ok(For::new(init, test, update, body).into())
+                            Ok(self.produce_node(tracker, For::new(init, test, update, body)).into())
                         }
 
                         // for namelist in explist do block end
                         _ => {
+                            let tracker = self.start_node()?;
+
                             let names = self.parse_list(Self::parse_name)?;
 
                             self.expect(Keyword::In)?;
@@ -254,12 +268,14 @@ impl Parser {
 
                             self.expect(Keyword::End)?;
 
-                            Ok(ForIn::new(names, exps, body).into())
+                            Ok(self.produce_node(tracker, ForIn::new(names, exps, body)).into())
                         }
                     }
 
                     // function funcname funcbody
                     Keyword::Function => {
+                        let tracker = self.start_node()?;
+
                         let name = {
                             let parts = self.parse_delimited(
                                 Op::Dot,
@@ -279,23 +295,27 @@ impl Parser {
 
                         let body = self.parse_function()?;
 
-                        Ok(FunctionDef::new(false, name, body).into())
+                        Ok(self.produce_node(tracker, FunctionDef::new(false, name, body)).into())
                     }
 
                     Keyword::Local => match self.peek(0)? {
                         // local function Name funcbody
                         Token::Keyword(Keyword::Function) => {
+                            let tracker = self.start_node()?;
+
                             self.consume()?;
 
                             let name = self.parse_name()?;
 
                             let body = self.parse_function()?;
 
-                            Ok(FunctionDef::new(true, name, body).into())
+                            Ok(self.produce_node(tracker, FunctionDef::new(true, name, body)).into())
                         }
 
                         // local namelist [`=´ explist]
                         _ => {
+                            let tracker = self.start_node()?;
+
                             let names = self.parse_list(Self::parse_name)?;
 
                             let init_exps = match self.consume_a(Op::Eq) {
@@ -303,7 +323,7 @@ impl Parser {
                                 false => None
                             };
 
-                            Ok(VarDef::new(names, init_exps).into())
+                            Ok(self.produce_node(tracker, VarDef::new(names, init_exps)).into())
                         }
                     }
 
@@ -327,8 +347,12 @@ impl Parser {
                     |parser| parser.parse_list(Self::parse_exp),
                     |e| e.ends_with("expected expression"),
                 )? {
-                    Some(exps) => Ok(Return::new(exps).into()),
-                    None => Ok(Return::new(Vec::new()).into())
+                    Some(exps) => {
+                        Ok(self.produce_node(tracker, Return::new(exps)).into())
+                    },
+                    None => {
+                        Ok(self.produce_node(tracker, Return::new(Vec::new())).into())
+                    }
                 }
             }
 
@@ -434,8 +458,10 @@ impl Parser {
         }
     }
 
-    fn parse_function(&mut self) -> Result<Function, String> {
+    fn parse_function(&mut self) -> Result<Node<Function>, String> {
         self.expect(Token::LParens)?;
+
+        let tracker = self.start_node()?;
 
         let mut params = self.parse_delimited(
             Token::Comma,
@@ -453,7 +479,7 @@ impl Parser {
 
         self.expect(Keyword::End)?;
 
-        Ok(Function::new(params, body).into())
+        Ok(self.produce_node(tracker, Function::new(params, body)))
     }
 
     // <Helpers>
@@ -581,7 +607,8 @@ impl Parser {
 
             // function"string"
             Token::Literal(Literal::String(arg)) => {
-                let exp = self.produce_node(tracker, Exp::String(arg));
+                let inner = self.produce_node(tracker, arg);
+                let exp = self.produce_node(tracker, Exp::String(inner));
 
                 Ok(vec![exp])
             }
