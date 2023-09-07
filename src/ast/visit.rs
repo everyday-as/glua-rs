@@ -1,4 +1,3 @@
-use std::os::macos::raw::stat;
 use crate::ast::exps::{Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary};
 use crate::ast::{Exp, Stat};
 use crate::ast::node::Node;
