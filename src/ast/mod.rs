@@ -1,10 +1,12 @@
 pub mod stats;
 pub mod exps;
 pub mod node;
+pub mod visit;
 
 use stats::*;
 use exps::*;
 use crate::ast::node::Node;
+use visit::*;
 
 pub type Block = Vec<Node<Stat>>;
 
