@@ -2,9 +2,10 @@ use crate::ast::Exp;
 use crate::ast::exps::{TableConstructor, Unary};
 use crate::ast::exps::table::Field;
 use crate::ast::exps::unary::UnOp;
+use crate::ast::node::Node;
 use crate::lexer::{Keyword, Literal, Op, Token};
 use crate::parser::parselets::Nud;
-use crate::parser::{Parser, Precedence};
+use crate::parser::{NodeTracker, Parser, Precedence};
 
 pub struct EllipsisParselet;
 
@@ -30,14 +31,23 @@ pub struct LiteralParselet;
 
 impl Nud for LiteralParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
+        let end = parser.rewind_stack.last().unwrap().1.end;
 
         match token {
             Token::Literal(literal) => match literal {
-                Literal::Bool(value) => Ok(Exp::Bool(parser.produce_node(tracker, value))),
+                Literal::Bool(value) => {
+                    let start = end - value.to_string().len();
+                    Ok(Exp::Bool(parser.produce_node_with_span(start..end, value)))
+                },
                 Literal::Nil => Ok(Exp::Nil),
-                Literal::Number(value) => Ok(Exp::Number(parser.produce_node(tracker, value))),
-                Literal::String(value) => Ok(Exp::String(parser.produce_node(tracker, value)))
+                Literal::Number(value) => {
+                    let start = end - value.to_string().len();
+                    Ok(Exp::Number(parser.produce_node_with_span(start..end, value)))
+                },
+                Literal::String(value) => {
+                    let start = end - value.len();
+                    Ok(Exp::String(parser.produce_node_with_span(start..end, value)))
+                }
             },
 
             _ => unreachable!()
@@ -49,10 +59,11 @@ pub struct NameParselet;
 
 impl Nud for NameParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
-
         if let Token::Name(name) = token {
-            return Ok(Exp::Ref(parser.produce_node(tracker, name)));
+            let end = parser.rewind_stack.last().unwrap().1.end;
+            let start = end - name.len();
+
+            return Ok(Exp::Ref(parser.produce_node_with_span(start..end, name)));
         }
 
         unreachable!();

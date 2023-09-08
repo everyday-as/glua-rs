@@ -71,6 +71,13 @@ impl Parser {
         }
     }
 
+    fn produce_node_with_span<T>(&self, span: Span, inner: T) -> Node<T> {
+        Node {
+            span,
+            inner
+        }
+    }
+
     fn parse_block(&mut self) -> Result<Block, String> {
         let mut stats = Vec::new();
 

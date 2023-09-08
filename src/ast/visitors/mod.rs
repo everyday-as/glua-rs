@@ -1,6 +1,5 @@
 pub mod renderer;
 
-use logos::Span;
 use crate::ast::exps::{Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary};
 use crate::ast::{Block, Exp, Stat};
 use crate::ast::node::Node;
