@@ -119,8 +119,6 @@ impl Parser {
                 }, |e| e.is_empty())?.clone() {
                     // `Assignment`
                     Some(var) => {
-                        let tracker = self.start_node()?;
-
                         let mut vars = vec![var];
 
                         while self.consume_a(Token::Comma) {
@@ -417,9 +415,9 @@ impl Parser {
     }
 
     fn parse_prefix_exp(&mut self) -> Result<Node<Exp>, String> {
-        let mut lhs = {
-            let tracker = self.start_node()?;
+        let tracker = self.start_node()?;
 
+        let mut lhs = {
             let (token, _) = self.consume()?;
 
             match get_prefix_nud_parselet(&token) {
@@ -435,8 +433,6 @@ impl Parser {
 
         while let Ok(next) = self.peek(0) {
             if let Some(parselet) = get_prefix_led_parselet(&next) {
-                let tracker = self.start_node()?;
-
                 let (token, _) = self.consume()?;
 
                 let exp = parselet.parse(self, lhs, token)?;
