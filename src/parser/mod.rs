@@ -101,6 +101,7 @@ impl Parser {
 
     pub fn parse_stat(&mut self) -> Result<Node<Stat>, String> {
         let tracker = self.start_node()?;
+
         let stat = match self.peek(0)? {
             Token::Name(_) => {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
@@ -153,8 +154,6 @@ impl Parser {
                 match keyword {
                     // do block end
                     Keyword::Do => {
-                        let tracker = self.start_node()?;
-
                         let body = self.parse_block()?;
 
                         self.expect(Keyword::End)?;
@@ -164,8 +163,6 @@ impl Parser {
 
                     // while exp do block end
                     Keyword::While => {
-                        let tracker = self.start_node()?;
-
                         let cond = self.parse_exp()?;
 
                         self.expect(Keyword::Do)?;
@@ -179,8 +176,6 @@ impl Parser {
 
                     // repeat block until exp
                     Keyword::Repeat => {
-                        let tracker = self.start_node()?;
-
                         let body = self.parse_block()?;
 
                         self.expect(Keyword::Until)?;
@@ -194,8 +189,6 @@ impl Parser {
 
                     // if exp then block {elseif exp then block} [else block] end
                     Keyword::If => {
-                        let tracker = self.start_node()?;
-
                         let cond = self.parse_exp()?;
 
                         self.expect(Keyword::Then)?;
@@ -227,8 +220,6 @@ impl Parser {
                     Keyword::For => match self.peek(1)? {
                         // for Name `=´ exp `,´ exp [`,´ exp] do block end
                         Token::Op(Op::Eq) => {
-                            let tracker = self.start_node()?;
-
                             let init = {
                                 let name = self.parse_name()?;
 
@@ -259,8 +250,6 @@ impl Parser {
 
                         // for namelist in explist do block end
                         _ => {
-                            let tracker = self.start_node()?;
-
                             let names = self.parse_list(Self::parse_name)?;
 
                             self.expect(Keyword::In)?;
@@ -279,8 +268,6 @@ impl Parser {
 
                     // function funcname funcbody
                     Keyword::Function => {
-                        let tracker = self.start_node()?;
-
                         let name = {
                             let parts = self.parse_delimited(
                                 Op::Dot,
@@ -306,8 +293,6 @@ impl Parser {
                     Keyword::Local => match self.peek(0)? {
                         // local function Name funcbody
                         Token::Keyword(Keyword::Function) => {
-                            let tracker = self.start_node()?;
-
                             self.consume()?;
 
                             let name = self.parse_name()?;
@@ -319,8 +304,6 @@ impl Parser {
 
                         // local namelist [`=´ explist]
                         _ => {
-                            let tracker = self.start_node()?;
-
                             let names = self.parse_list(Self::parse_name)?;
 
                             let init_exps = match self.consume_a(Op::Eq) {
@@ -379,11 +362,11 @@ impl Parser {
     }
 
     fn parse_exp_prec(&mut self, min_precedence: Precedence) -> Result<Node<Exp>, String> {
+        let tracker = self.start_node()?;
+
         let mut lhs = {
             match get_nud_parselet(&self.peek(0)?) {
                 Some(parselet) => {
-                    let tracker = self.start_node()?;
-
                     let (token, _) = self.consume()?;
 
                     let exp = parselet.parse(self, token)?;
@@ -396,8 +379,6 @@ impl Parser {
         };
 
         while min_precedence < self.get_precedence() {
-            let tracker = self.start_node()?;
-
             let (token, _) = self.consume()?;
 
             lhs = match get_led_parselet(&token) {
