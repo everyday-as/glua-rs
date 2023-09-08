@@ -90,6 +90,8 @@ impl Nud for TableConstructorParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::LBrace, token);
 
+        let tracker = parser.start_node()?;
+
         let mut fields = Vec::new();
 
         while !parser.consume_a(Token::RBrace) {
@@ -135,8 +137,6 @@ impl Nud for TableConstructorParselet {
                 }
             })
         }
-
-        let tracker = parser.start_node()?;
 
         Ok(parser.produce_node(tracker, TableConstructor::new(fields)).into())
     }
