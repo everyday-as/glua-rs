@@ -97,8 +97,6 @@ impl Nud for TableConstructorParselet {
             fields.push(match parser.peek(0)? {
                 // { name = Exp }
                 Token::Name(name) if parser.peek(1) == Ok(Token::Op(Op::Eq)) => {
-                    let tracker = parser.start_node()?;
-
                     parser.consume()?;
                     parser.consume()?;
 
