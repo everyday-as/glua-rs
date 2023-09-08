@@ -23,7 +23,7 @@ mod tests {
 
             let mut buf = String::new();
 
-            file.read_to_string(&mut buf);
+            let _ = file.read_to_string(&mut buf);
 
             buf
         };
@@ -32,7 +32,7 @@ mod tests {
 
         let chunk = parser.parse_chunk().unwrap();
 
-        write!(File::create("test.parsed").unwrap(), "{:#?}", chunk);
+        write!(File::create("test.parsed").unwrap(), "{:#?}", chunk).unwrap();
     }
 }
 

@@ -1,8 +1,9 @@
 use std::ops::Deref;
 use logos::Span;
 use crate::ast::Exp;
+use crate::ast::exps::Member;
 use crate::ast::visitors::renderer::Renderer;
-use crate::ast::visitors::{walk_exp};
+use crate::ast::visitors::{Visitor, walk_exp};
 
 #[derive(Clone, Debug)]
 pub struct Node<T> {
@@ -21,6 +22,15 @@ impl ToString for Node<Exp> {
         let mut renderer = Renderer::default();
 
         walk_exp(&mut renderer, &self);
+
+        renderer.into_inner()
+    }
+}
+impl ToString for Node<Member> {
+    fn to_string(&self) -> String {
+        let mut renderer = Renderer::default();
+
+        renderer.visit_member_exp(&self);
 
         renderer.into_inner()
     }

@@ -2,10 +2,9 @@ use crate::ast::Exp;
 use crate::ast::exps::{TableConstructor, Unary};
 use crate::ast::exps::table::Field;
 use crate::ast::exps::unary::UnOp;
-use crate::ast::node::Node;
 use crate::lexer::{Keyword, Literal, Op, Token};
 use crate::parser::parselets::Nud;
-use crate::parser::{NodeTracker, Parser, Precedence};
+use crate::parser::{Parser, Precedence};
 
 pub struct EllipsisParselet;
 

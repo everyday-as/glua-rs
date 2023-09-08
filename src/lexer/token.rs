@@ -124,7 +124,7 @@ fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
 
                 n_str.push(ch);
 
-                for i in 0..2 {
+                for _i in 0..2 {
                     if let Some('0'..='9') = chars.peek() {
                         n_str.push(chars.next().unwrap());
                     }

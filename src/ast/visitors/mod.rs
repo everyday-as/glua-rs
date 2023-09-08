@@ -86,15 +86,15 @@ pub trait Visitor {
         walk_unary_exp(self, &v);
     }
 
-    fn visit_bool_exp(&mut self, v: &Node<bool>) {}
+    fn visit_bool_exp(&mut self, _v: &Node<bool>) {}
 
     fn visit_nil_exp(&mut self) {}
 
-    fn visit_number_exp(&mut self, v: &Node<f64>) {}
+    fn visit_number_exp(&mut self, _v: &Node<f64>) {}
 
-    fn visit_ref_exp(&mut self, v: &Node<String>) {}
+    fn visit_ref_exp(&mut self, _v: &Node<String>) {}
 
-    fn visit_string_exp(&mut self, v: &Node<String>) {}
+    fn visit_string_exp(&mut self, _v: &Node<String>) {}
 
     fn visit_var_args_exp(&mut self) {}
 

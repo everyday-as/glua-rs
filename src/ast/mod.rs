@@ -6,7 +6,6 @@ pub mod visitors;
 use stats::*;
 use exps::*;
 use crate::ast::node::Node;
-use visitors::*;
 
 pub type Block = Vec<Node<Stat>>;
 
