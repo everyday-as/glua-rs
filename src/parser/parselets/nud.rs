@@ -89,7 +89,7 @@ impl Nud for TableConstructorParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::LBrace, token);
 
-        let tracker = parser.start_node()?;
+        parser.fork_node()?;
 
         let mut fields = Vec::new();
 
@@ -100,7 +100,13 @@ impl Nud for TableConstructorParselet {
                     parser.consume()?;
                     parser.consume()?;
 
-                    let field = Field::new(Some(parser.produce_node(tracker, Exp::String(parser.produce_node(tracker, name)))), parser.parse_exp()?);
+                    parser.fork_node()?;
+                    let inner_node = parser.produce_node(name);
+
+                    parser.fork_node()?;
+                    let node = parser.produce_node(Exp::String(inner_node));
+
+                    let field = Field::new(Some(node), parser.parse_exp()?);
 
                     parser.consume_a(Token::Comma);
 
@@ -135,7 +141,7 @@ impl Nud for TableConstructorParselet {
             })
         }
 
-        Ok(parser.produce_node(tracker, TableConstructor::new(fields)).into())
+        Ok(parser.produce_node(TableConstructor::new(fields)).into())
     }
 }
 
@@ -143,7 +149,7 @@ pub struct UnaryParselet;
 
 impl Nud for UnaryParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
+       parser.start_node()?;
 
         let op = match token {
             Token::Op(Op::Len) => UnOp::Len,
@@ -154,6 +160,6 @@ impl Nud for UnaryParselet {
         };
 
         let unary = Unary::new(op, parser.parse_exp_prec(Precedence::Unary)?);
-        Ok(parser.produce_node(tracker, unary).into())
+        Ok(parser.produce_node(unary).into())
     }
 }

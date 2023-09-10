@@ -10,7 +10,7 @@ pub struct AccessParselet;
 
 impl Led for AccessParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         match token {
             // foo[Exp]
@@ -19,13 +19,13 @@ impl Led for AccessParselet {
 
                 parser.expect(Token::RBracket)?;
 
-                Ok(parser.produce_node(tracker, Index::new(lhs, exp)).into())
+                Ok(parser.produce_node(Index::new(lhs, exp)).into())
             }
 
             // foo.Name
             Token::Op(Op::Dot) => {
                 let name = parser.parse_name()?;
-                Ok(parser.produce_node(tracker, Member::new(lhs, name)).into())
+                Ok(parser.produce_node(Member::new(lhs, name)).into())
             }
 
             _ => unreachable!()
@@ -41,7 +41,7 @@ pub struct AdditiveParselet;
 
 impl Led for AdditiveParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         let op = match token {
             Token::Op(Op::Add) => BinOp::Add,
@@ -51,7 +51,7 @@ impl Led for AdditiveParselet {
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
 
-        Ok(parser.produce_node(tracker, Binary::new(lhs, op, rhs)).into())
+        Ok(parser.produce_node(Binary::new(lhs, op, rhs)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -65,11 +65,11 @@ impl Led for AndParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::And), token);
 
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
 
-        Ok(parser.produce_node(tracker, Binary::new(lhs, BinOp::And, rhs)).into())
+        Ok(parser.produce_node(Binary::new(lhs, BinOp::And, rhs)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -83,12 +83,12 @@ impl Led for ConcatParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::DotDot), token);
 
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         // Right associative so pass one lower precedence level than us
         let rhs = parser.parse_exp_prec(Precedence::Comparative)?;
 
-        Ok(parser.produce_node(tracker, Binary::new(lhs, BinOp::Concat, rhs)).into())
+        Ok(parser.produce_node(Binary::new(lhs, BinOp::Concat, rhs)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -100,7 +100,7 @@ pub struct ComparativeParselet;
 
 impl Led for ComparativeParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         let op = match token {
             Token::Op(Op::EqEq) => BinOp::Eq,
@@ -114,7 +114,7 @@ impl Led for ComparativeParselet {
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
 
-        Ok(parser.produce_node(tracker, Binary::new(lhs, op, rhs)).into())
+        Ok(parser.produce_node(Binary::new(lhs, op, rhs)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -128,12 +128,12 @@ impl Led for ExponentiationParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::Exp), token);
 
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         // Right associative so pass one lower precedence level than us
         let rhs = parser.parse_exp_prec(Precedence::Unary)?;
 
-        Ok(parser.produce_node(tracker, Binary::new(lhs, BinOp::Exp, rhs)).into())
+        Ok(parser.produce_node(Binary::new(lhs, BinOp::Exp, rhs)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -145,11 +145,11 @@ pub struct FunctionCallParselet;
 
 impl Led for FunctionCallParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
+        parser.fork_node()?;
 
         let args = parser.parse_args(token)?;
 
-        Ok(parser.produce_node(tracker, FunctionCall::new(lhs, args)).into())
+        Ok(parser.produce_node(FunctionCall::new(lhs, args)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -163,7 +163,7 @@ impl Led for MethodCallParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::Colon), token);
 
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         let name = parser.parse_name()?;
 
@@ -173,7 +173,7 @@ impl Led for MethodCallParselet {
             parser.parse_args(token)?
         };
 
-        Ok(parser.produce_node(tracker, MethodCall::new(lhs, name, args)).into())
+        Ok(parser.produce_node(MethodCall::new(lhs, name, args)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -185,7 +185,7 @@ pub struct MultiplicativeParselet;
 
 impl Led for MultiplicativeParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         let op = match token {
             Token::Op(Op::Mod) => BinOp::Mod,
@@ -196,7 +196,7 @@ impl Led for MultiplicativeParselet {
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
 
-        Ok(parser.produce_node(tracker, Binary::new(lhs, op, rhs)).into())
+        Ok(parser.produce_node(Binary::new(lhs, op, rhs)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -210,11 +210,11 @@ impl Led for OrParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::Op(Op::Or), token);
 
-        let tracker = parser.start_node()?;
+        parser.start_node()?;
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
 
-        Ok(parser.produce_node(tracker, Binary::new(lhs, BinOp::Or, rhs)).into())
+        Ok(parser.produce_node(Binary::new(lhs, BinOp::Or, rhs)).into())
     }
 
     fn get_precedence(&self) -> Precedence {
