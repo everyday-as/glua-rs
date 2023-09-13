@@ -1,11 +1,11 @@
-pub mod stats;
 pub mod exps;
 pub mod node;
+pub mod stats;
 pub mod visitors;
 
-use stats::*;
-use exps::*;
 use crate::ast::node::Node;
+use exps::*;
+use stats::*;
 
 pub type Block = Vec<Node<Stat>>;
 
@@ -44,5 +44,5 @@ pub enum Exp {
     String(Node<String>),
     Table(Node<TableConstructor>),
     Unary(Node<Unary>),
-    VarArgs
+    VarArgs,
 }

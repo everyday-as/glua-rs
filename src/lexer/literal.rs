@@ -5,7 +5,7 @@ pub enum Literal {
     Bool(bool),
     Nil,
     Number(f64),
-    String(String)
+    String(String),
 }
 
 impl Into<Token> for Literal {

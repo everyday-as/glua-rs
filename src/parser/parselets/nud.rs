@@ -1,7 +1,7 @@
-use crate::ast::Exp;
-use crate::ast::exps::{TableConstructor, Unary};
 use crate::ast::exps::table::Field;
 use crate::ast::exps::unary::UnOp;
+use crate::ast::exps::{TableConstructor, Unary};
+use crate::ast::Exp;
 use crate::lexer::{Keyword, Literal, Op, Token};
 use crate::parser::parselets::Nud;
 use crate::parser::{Parser, Precedence};
@@ -37,19 +37,23 @@ impl Nud for LiteralParselet {
                 Literal::Bool(value) => {
                     let start = end - value.to_string().len();
                     Ok(Exp::Bool(parser.produce_node_with_span(start..end, value)))
-                },
+                }
                 Literal::Nil => Ok(Exp::Nil),
                 Literal::Number(value) => {
                     let start = end - value.to_string().len();
-                    Ok(Exp::Number(parser.produce_node_with_span(start..end, value)))
-                },
+                    Ok(Exp::Number(
+                        parser.produce_node_with_span(start..end, value),
+                    ))
+                }
                 Literal::String(value) => {
                     let start = end - value.len();
-                    Ok(Exp::String(parser.produce_node_with_span(start..end, value)))
+                    Ok(Exp::String(
+                        parser.produce_node_with_span(start..end, value),
+                    ))
                 }
             },
 
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 }
@@ -149,14 +153,14 @@ pub struct UnaryParselet;
 
 impl Nud for UnaryParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
-       parser.start_node()?;
+        parser.start_node()?;
 
         let op = match token {
             Token::Op(Op::Len) => UnOp::Len,
             Token::Op(Op::Not) => UnOp::Not,
             Token::Op(Op::Sub) => UnOp::Neg,
 
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         let unary = Unary::new(op, parser.parse_exp_prec(Precedence::Unary)?);

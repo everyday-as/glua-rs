@@ -1,8 +1,8 @@
-use std::fmt::{Display, Formatter};
 use std::fmt;
+use std::fmt::{Display, Formatter};
 
-use crate::ast::Exp;
 use crate::ast::node::Node;
+use crate::ast::Exp;
 
 #[derive(Clone, Debug)]
 pub struct Unary {
@@ -34,10 +34,14 @@ impl Into<Exp> for Node<Unary> {
 
 impl Display for UnOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", match self {
-            UnOp::Neg => "-",
-            UnOp::Not => "not",
-            UnOp::Len => "#"
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                UnOp::Neg => "-",
+                UnOp::Not => "not",
+                UnOp::Len => "#",
+            }
+        )
     }
 }

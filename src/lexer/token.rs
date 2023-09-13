@@ -1,6 +1,6 @@
 use crate::lexer::{Keyword, Literal, Op};
 
-use logos::{Logos, Lexer};
+use logos::{Lexer, Logos};
 
 #[derive(Clone, Debug, Logos, PartialEq)]
 pub enum Token {
@@ -106,7 +106,7 @@ fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
 
     let pad = match slice.chars().nth(0).unwrap() {
         '[' => 2,
-        _ => 1
+        _ => 1,
     };
 
     let mut value = String::with_capacity(slice.len());
@@ -156,7 +156,7 @@ fn parse_multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
     // Offset past comment dashes
     let offset = match "-" == &lexer.slice()[0..1] {
         true => 2,
-        false => 0
+        false => 0,
     };
 
     let len = lexer.slice().len();
@@ -173,7 +173,8 @@ fn parse_multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
         buf
     };
 
-    lexer.remainder()
+    lexer
+        .remainder()
         .find(&closing)
         .map(|i| lexer.bump(i + closing.len()))
         .map(|_| lexer.slice()[len..lexer.slice().len() - len].to_owned())

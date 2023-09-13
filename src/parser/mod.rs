@@ -1,13 +1,13 @@
-use std::collections::VecDeque;
 pub use logos::Span;
+use std::collections::VecDeque;
 
-use crate::ast::*;
 use crate::ast::exps::*;
 use crate::ast::node::Node;
 use crate::ast::stats::*;
+use crate::ast::*;
 use crate::lexer::*;
-use crate::parser::parselets::{Led, led, Nud, nud};
 use crate::parser::parselets::nud::TableConstructorParselet;
+use crate::parser::parselets::{led, nud, Led, Nud};
 
 mod parselets;
 
@@ -52,7 +52,10 @@ impl Parser {
 
         match self.tokens.is_empty() {
             true => Ok(block),
-            false => Err(format!("Unexpected {:?}, expected EOF", self.tokens.pop_front().unwrap()))
+            false => Err(format!(
+                "Unexpected {:?}, expected EOF",
+                self.tokens.pop_front().unwrap()
+            )),
         }
     }
 
@@ -63,7 +66,7 @@ impl Parser {
 
                 Ok(())
             }
-            None => Err("Unexpected EOF".to_owned())
+            None => Err("Unexpected EOF".to_owned()),
         }
     }
 
@@ -90,19 +93,16 @@ impl Parser {
     }
 
     fn produce_node_with_span<T>(&self, span: Span, inner: T) -> Node<T> {
-        Node {
-            span,
-            inner,
-        }
+        Node { span, inner }
     }
 
     fn parse_block(&mut self) -> Result<Block, String> {
         let mut stats = Vec::new();
 
         // Rewind here, because Lua has SYNTACTICALLY ASCENDED THE MORTAL FUCKING PLANE
-        while let Some(stat) = self.with_rewind(
-            Self::parse_stat,
-            |e| e == "Unexpected EOF" || e.ends_with("expected stat"))? {
+        while let Some(stat) = self.with_rewind(Self::parse_stat, |e| {
+            e == "Unexpected EOF" || e.ends_with("expected stat")
+        })? {
             self.consume_a(Token::Semicolon);
 
             stats.push(stat);
@@ -123,19 +123,24 @@ impl Parser {
         let stat = match self.peek(0)? {
             Token::Name(_) => {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
-                match self.with_rewind(|parser| {
-                    let exp = parser.parse_var()
-                        .map_err(|_| String::new())?;
+                match self
+                    .with_rewind(
+                        |parser| {
+                            let exp = parser.parse_var().map_err(|_| String::new())?;
 
-                    // Eq or Comma denotes an assignment expression
-                    if parser.next_is_in(&[Token::Comma, Token::Op(Op::Eq)]) {
-                        Ok(exp)
-                    } else {
-                        // Otherwise we rewind, signalled by an empty string
-                        // TODO: improve this
-                        Err(String::new())
-                    }
-                }, |e| e.is_empty())?.clone() {
+                            // Eq or Comma denotes an assignment expression
+                            if parser.next_is_in(&[Token::Comma, Token::Op(Op::Eq)]) {
+                                Ok(exp)
+                            } else {
+                                // Otherwise we rewind, signalled by an empty string
+                                // TODO: improve this
+                                Err(String::new())
+                            }
+                        },
+                        |e| e.is_empty(),
+                    )?
+                    .clone()
+                {
                     // `Assignment`
                     Some(var) => {
                         self.fork_node()?;
@@ -162,7 +167,7 @@ impl Parser {
 
                             Exp::MethodCall(call) => Ok(Stat::MethodCall(call)),
 
-                            _ => Err(format!("Unexpected `{:?}`, expected functioncall", token))
+                            _ => Err(format!("Unexpected `{:?}`, expected functioncall", token)),
                         }
                     }
                 }
@@ -237,12 +242,14 @@ impl Parser {
 
                         let else_block = match self.consume_a(Keyword::Else) {
                             true => Some(self.parse_block()?),
-                            false => None
+                            false => None,
                         };
 
                         self.expect(Keyword::End)?;
 
-                        Ok(self.produce_node(IfElse::new(cond, body, else_ifs, else_block)).into())
+                        Ok(self
+                            .produce_node(IfElse::new(cond, body, else_ifs, else_block))
+                            .into())
                     }
 
                     Keyword::For => match self.peek(1)? {
@@ -266,7 +273,7 @@ impl Parser {
 
                             let update = match self.consume_a(Token::Comma) {
                                 true => Some(self.parse_exp()?),
-                                false => None
+                                false => None,
                             };
 
                             self.expect(Keyword::Do)?;
@@ -296,18 +303,18 @@ impl Parser {
 
                             Ok(self.produce_node(ForIn::new(names, exps, body)).into())
                         }
-                    }
+                    },
 
                     // function funcname funcbody
                     Keyword::Function => {
                         self.fork_node()?;
 
                         let name = {
-                            let parts = self.parse_delimited(
-                                Op::Dot,
-                                Self::parse_name,
-                                |token| [Token::LParens, Token::Op(Op::Colon)].contains(&token),
-                            ).unwrap();
+                            let parts = self
+                                .parse_delimited(Op::Dot, Self::parse_name, |token| {
+                                    [Token::LParens, Token::Op(Op::Colon)].contains(&token)
+                                })
+                                .unwrap();
 
                             let mut name = parts.join(".");
 
@@ -321,7 +328,9 @@ impl Parser {
 
                         let body = self.parse_function()?;
 
-                        Ok(self.produce_node(FunctionDef::new(false, name, body)).into())
+                        Ok(self
+                            .produce_node(FunctionDef::new(false, name, body))
+                            .into())
                     }
 
                     Keyword::Local => match self.peek(0)? {
@@ -346,18 +355,18 @@ impl Parser {
 
                             let init_exps = match self.consume_a(Op::Eq) {
                                 true => Some(self.parse_list(Self::parse_exp)?),
-                                false => None
+                                false => None,
                             };
 
                             Ok(self.produce_node(VarDef::new(names, init_exps)).into())
                         }
-                    }
+                    },
 
-                    _ => Err(format!("Unexpected `{:?}`, expected stat", keyword))
+                    _ => Err(format!("Unexpected `{:?}`, expected stat", keyword)),
                 }
             }
 
-            token => Err(format!("Unexpected `{:?}`, expected stat", token))
+            token => Err(format!("Unexpected `{:?}`, expected stat", token)),
         };
 
         Ok(self.produce_node(stat?))
@@ -389,9 +398,10 @@ impl Parser {
             // GMod specific
             Token::Keyword(Keyword::Continue) => Ok(Stat::Continue),
 
-            token => Err(
-                format!("Unexpected `{:?}`, expected return, continue or break", token)
-            )
+            token => Err(format!(
+                "Unexpected `{:?}`, expected return, continue or break",
+                token
+            )),
         };
 
         Ok(self.produce_node(stat?))
@@ -416,7 +426,7 @@ impl Parser {
                     self.produce_node(exp)
                 }
 
-                None => self.parse_prefix_exp()?
+                None => self.parse_prefix_exp()?,
             }
         };
 
@@ -432,7 +442,7 @@ impl Parser {
                     self.produce_node(exp)
                 }
 
-                None => return Err(format!("Unexpected `{:?}` in expression", token))
+                None => return Err(format!("Unexpected `{:?}` in expression", token)),
             }
         }
 
@@ -457,7 +467,7 @@ impl Parser {
                     Ok(self.produce_node(exp))
                 }
 
-                None => Err(format!("Unexpected `{:?}`, expected expression", token))
+                None => Err(format!("Unexpected `{:?}`, expected expression", token)),
             }?
         };
 
@@ -491,18 +501,16 @@ impl Parser {
 
             Exp::Ref(_) => Ok(exp),
 
-            _ => Err("Unexpected prefixexp, expecting var".to_owned())
+            _ => Err("Unexpected prefixexp, expecting var".to_owned()),
         }
     }
 
     fn parse_function(&mut self) -> Result<Node<Function>, String> {
         self.expect(Token::LParens)?;
 
-        let mut params = self.parse_delimited(
-            Token::Comma,
-            Parser::parse_name,
-            |token| Token::Ellipsis == token || Token::RParens == token,
-        )?;
+        let mut params = self.parse_delimited(Token::Comma, Parser::parse_name, |token| {
+            Token::Ellipsis == token || Token::RParens == token
+        })?;
 
         if self.consume_a(Token::Ellipsis) {
             params.push("...".to_owned());
@@ -526,11 +534,11 @@ impl Parser {
                 None => match get_prefix_led_parselet(&token) {
                     Some(parselet) => parselet.get_precedence(),
 
-                    None => Precedence::None
-                }
-            }
+                    None => Precedence::None,
+                },
+            },
 
-            Err(_) => Precedence::None
+            Err(_) => Precedence::None,
         }
     }
 
@@ -538,12 +546,13 @@ impl Parser {
         match self.tokens.iter().nth(n) {
             Some((token, _)) => Ok(token.clone()),
 
-            None => Err("Unexpected EOF".to_owned())
+            None => Err("Unexpected EOF".to_owned()),
         }
     }
 
     fn consume(&mut self) -> Result<SpannedToken, String> {
-        self.tokens.pop_front()
+        self.tokens
+            .pop_front()
             .ok_or("Unexpected EOF".to_owned())
             .and_then(|token| {
                 self.rewind_stack.push(token.clone());
@@ -552,7 +561,10 @@ impl Parser {
             })
     }
 
-    fn expect<E>(&mut self, expected: E) -> Result<(), String> where E: Into<Token> {
+    fn expect<E>(&mut self, expected: E) -> Result<(), String>
+    where
+        E: Into<Token>,
+    {
         let (expected, (got, _)) = (expected.into(), self.consume()?);
 
         if got == expected {
@@ -562,7 +574,10 @@ impl Parser {
         }
     }
 
-    fn consume_a<E>(&mut self, expected: E) -> bool where E: Into<Token> {
+    fn consume_a<E>(&mut self, expected: E) -> bool
+    where
+        E: Into<Token>,
+    {
         return if self.next_is(expected) {
             // If `next_is` returns `true` but `consume` fails something very, very bad has happened
             self.consume().expect("Internal error");
@@ -573,15 +588,21 @@ impl Parser {
         };
     }
 
-    fn next_is<E>(&mut self, expected: E) -> bool where E: Into<Token> {
+    fn next_is<E>(&mut self, expected: E) -> bool
+    where
+        E: Into<Token>,
+    {
         match self.peek(0) {
             Ok(got) => got == expected.into(),
 
-            Err(_) => false
+            Err(_) => false,
         }
     }
 
-    fn next_is_in<P>(&mut self, possibilities: &[P]) -> bool where P: Into<Token> + Clone {
+    fn next_is_in<P>(&mut self, possibilities: &[P]) -> bool
+    where
+        P: Into<Token> + Clone,
+    {
         for possibility in possibilities {
             if self.next_is(possibility.clone().into()) {
                 return true;
@@ -592,9 +613,9 @@ impl Parser {
     }
 
     fn with_rewind<T, F, C>(&mut self, func: F, can_rewind: C) -> Result<Option<T>, String>
-        where
-            F: FnOnce(&mut Parser) -> Result<T, String>,
-            C: FnOnce(&str) -> bool
+    where
+        F: FnOnce(&mut Parser) -> Result<T, String>,
+        C: FnOnce(&str) -> bool,
     {
         let rewind_to = self.rewind_stack.len();
 
@@ -609,8 +630,8 @@ impl Parser {
                     Ok(None)
                 }
 
-                false => Err(err)
-            }
+                false => Err(err),
+            },
         }
     }
     // </Helpers>
@@ -629,7 +650,7 @@ impl Parser {
 
                     Ok(args)
                 }
-            }
+            },
 
             // function{ table }
             Token::LBrace => {
@@ -651,7 +672,7 @@ impl Parser {
                 Ok(vec![node])
             }
 
-            token => Err(format!("Unexpected {:?}, expected args", token))
+            token => Err(format!("Unexpected {:?}, expected args", token)),
         }
     }
 
@@ -662,15 +683,20 @@ impl Parser {
         match token {
             Token::Name(name) => Ok(name),
 
-            token => Err(format!("Unexpected `{:?}`, expected name", token))
+            token => Err(format!("Unexpected `{:?}`, expected name", token)),
         }
     }
 
-    fn parse_delimited<T, D, P, IE>(&mut self, delim: D, parse: P, is_end: IE) -> Result<Vec<T>, String>
-        where
-            D: Into<Token>,
-            P: Fn(&mut Parser) -> Result<T, String>,
-            IE: Fn(Token) -> bool
+    fn parse_delimited<T, D, P, IE>(
+        &mut self,
+        delim: D,
+        parse: P,
+        is_end: IE,
+    ) -> Result<Vec<T>, String>
+    where
+        D: Into<Token>,
+        P: Fn(&mut Parser) -> Result<T, String>,
+        IE: Fn(Token) -> bool,
     {
         let (mut items, delim) = (Vec::new(), delim.into());
 
@@ -686,7 +712,8 @@ impl Parser {
     }
 
     fn parse_list<T, P>(&mut self, parse: P) -> Result<Vec<T>, String>
-        where P: Fn(&mut Parser) -> Result<T, String>
+    where
+        P: Fn(&mut Parser) -> Result<T, String>,
     {
         let mut items = Vec::new();
 
@@ -714,10 +741,9 @@ fn get_nud_parselet(token: &Token) -> Option<&'static dyn Nud> {
 
         Token::Literal(_) => Some(&nud::LiteralParselet),
 
-        Token::Op(Op::Len) | Token::Op(Op::Not)
-        | Token::Op(Op::Sub) => Some(&nud::UnaryParselet),
+        Token::Op(Op::Len) | Token::Op(Op::Not) | Token::Op(Op::Sub) => Some(&nud::UnaryParselet),
 
-        _ => None
+        _ => None,
     }
 }
 
@@ -725,22 +751,26 @@ fn get_led_parselet(token: &Token) -> Option<&'static dyn Led> {
     match token {
         Token::Op(Op::Exp) => Some(&led::ExponentiationParselet),
 
-        Token::Op(Op::Mod) | Token::Op(Op::Mul)
-        | Token::Op(Op::Div) => Some(&led::MultiplicativeParselet),
+        Token::Op(Op::Mod) | Token::Op(Op::Mul) | Token::Op(Op::Div) => {
+            Some(&led::MultiplicativeParselet)
+        }
 
         Token::Op(Op::Add) | Token::Op(Op::Sub) => Some(&led::AdditiveParselet),
 
         Token::Op(Op::DotDot) => Some(&led::ConcatParselet),
 
-        Token::Op(Op::Lt) | Token::Op(Op::Gt)
-        | Token::Op(Op::LtEq) | Token::Op(Op::GtEq)
-        | Token::Op(Op::Ne) | Token::Op(Op::EqEq) => Some(&led::ComparativeParselet),
+        Token::Op(Op::Lt)
+        | Token::Op(Op::Gt)
+        | Token::Op(Op::LtEq)
+        | Token::Op(Op::GtEq)
+        | Token::Op(Op::Ne)
+        | Token::Op(Op::EqEq) => Some(&led::ComparativeParselet),
 
         Token::Op(Op::And) => Some(&led::AndParselet),
 
         Token::Op(Op::Or) => Some(&led::OrParselet),
 
-        _ => None
+        _ => None,
     }
 }
 
@@ -750,7 +780,7 @@ fn get_prefix_nud_parselet(token: &Token) -> Option<&'static dyn Nud> {
 
         Token::Name(_) => Some(&nud::NameParselet),
 
-        _ => None
+        _ => None,
     }
 }
 
@@ -758,12 +788,13 @@ fn get_prefix_led_parselet(token: &Token) -> Option<&'static dyn Led> {
     match token {
         Token::LBracket | Token::Op(Op::Dot) => Some(&led::AccessParselet),
 
-        Token::LParens | Token::LBrace
-        | Token::Literal(Literal::String(_)) => Some(&led::FunctionCallParselet),
+        Token::LParens | Token::LBrace | Token::Literal(Literal::String(_)) => {
+            Some(&led::FunctionCallParselet)
+        }
 
         Token::Op(Op::Colon) => Some(&led::MethodCallParselet),
 
-        _ => None
+        _ => None,
     }
 }
 

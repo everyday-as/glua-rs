@@ -11,11 +11,7 @@ pub struct FunctionDef {
 
 impl FunctionDef {
     pub fn new(local: bool, name: String, body: Node<Function>) -> Self {
-        Self {
-            local,
-            name,
-            body,
-        }
+        Self { local, name, body }
     }
 }
 

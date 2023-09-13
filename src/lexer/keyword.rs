@@ -18,7 +18,7 @@ pub enum Keyword {
     Until,
     While,
     // GMod specific
-    Continue
+    Continue,
 }
 
 impl Into<Token> for Keyword {

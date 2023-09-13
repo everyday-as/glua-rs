@@ -1,9 +1,13 @@
 pub mod renderer;
 
-use crate::ast::exps::{Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary};
-use crate::ast::{Block, Exp, Stat};
+use crate::ast::exps::{
+    Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary,
+};
 use crate::ast::node::Node;
-use crate::ast::stats::{Assignment, Do, For, ForIn, FunctionDef, IfElse, RepeatUntil, Return, VarDef, While};
+use crate::ast::stats::{
+    Assignment, Do, For, ForIn, FunctionDef, IfElse, RepeatUntil, Return, VarDef, While,
+};
+use crate::ast::{Block, Exp, Stat};
 
 pub trait Visitor {
     // Statements
@@ -211,7 +215,7 @@ pub fn walk_exp<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Exp>) {
         Exp::Number(e) => visitor.visit_number_exp(&e),
         Exp::Ref(e) => visitor.visit_ref_exp(&e),
         Exp::String(e) => visitor.visit_string_exp(&e),
-        Exp::VarArgs => visitor.visit_var_args_exp()
+        Exp::VarArgs => visitor.visit_var_args_exp(),
     };
 }
 

@@ -1,10 +1,10 @@
-use crate::ast::Exp;
-use crate::ast::exps::{Binary, FunctionCall, Index, Member, MethodCall};
 use crate::ast::exps::binary::BinOp;
+use crate::ast::exps::{Binary, FunctionCall, Index, Member, MethodCall};
 use crate::ast::node::Node;
+use crate::ast::Exp;
 use crate::lexer::{Op, Token};
-use crate::parser::{Parser, Precedence};
 use crate::parser::parselets::Led;
+use crate::parser::{Parser, Precedence};
 
 pub struct AccessParselet;
 
@@ -28,7 +28,7 @@ impl Led for AccessParselet {
                 Ok(parser.produce_node(Member::new(lhs, name)).into())
             }
 
-            _ => unreachable!()
+            _ => unreachable!(),
         }
     }
 
@@ -46,7 +46,7 @@ impl Led for AdditiveParselet {
         let op = match token {
             Token::Op(Op::Add) => BinOp::Add,
             Token::Op(Op::Sub) => BinOp::Sub,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
@@ -69,7 +69,9 @@ impl Led for AndParselet {
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
 
-        Ok(parser.produce_node(Binary::new(lhs, BinOp::And, rhs)).into())
+        Ok(parser
+            .produce_node(Binary::new(lhs, BinOp::And, rhs))
+            .into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -88,7 +90,9 @@ impl Led for ConcatParselet {
         // Right associative so pass one lower precedence level than us
         let rhs = parser.parse_exp_prec(Precedence::Comparative)?;
 
-        Ok(parser.produce_node(Binary::new(lhs, BinOp::Concat, rhs)).into())
+        Ok(parser
+            .produce_node(Binary::new(lhs, BinOp::Concat, rhs))
+            .into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -109,7 +113,7 @@ impl Led for ComparativeParselet {
             Token::Op(Op::Lt) => BinOp::Lt,
             Token::Op(Op::LtEq) => BinOp::LtEq,
             Token::Op(Op::Ne) => BinOp::Ne,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;
@@ -133,7 +137,9 @@ impl Led for ExponentiationParselet {
         // Right associative so pass one lower precedence level than us
         let rhs = parser.parse_exp_prec(Precedence::Unary)?;
 
-        Ok(parser.produce_node(Binary::new(lhs, BinOp::Exp, rhs)).into())
+        Ok(parser
+            .produce_node(Binary::new(lhs, BinOp::Exp, rhs))
+            .into())
     }
 
     fn get_precedence(&self) -> Precedence {
@@ -191,7 +197,7 @@ impl Led for MultiplicativeParselet {
             Token::Op(Op::Mod) => BinOp::Mod,
             Token::Op(Op::Mul) => BinOp::Mul,
             Token::Op(Op::Div) => BinOp::Div,
-            _ => unreachable!()
+            _ => unreachable!(),
         };
 
         let rhs = parser.parse_exp_prec(self.get_precedence())?;

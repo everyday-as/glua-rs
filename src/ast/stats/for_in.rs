@@ -1,20 +1,16 @@
-use crate::ast::{Stat, Exp, Block};
 use crate::ast::node::Node;
+use crate::ast::{Block, Exp, Stat};
 
 #[derive(Clone, Debug)]
 pub struct ForIn {
     pub names: Vec<String>,
     pub exps: Vec<Node<Exp>>,
-    pub body: Block
+    pub body: Block,
 }
 
 impl ForIn {
     pub fn new(names: Vec<String>, exps: Vec<Node<Exp>>, body: Block) -> Self {
-        Self {
-            names,
-            exps,
-            body
-        }
+        Self { names, exps, body }
     }
 }
 
@@ -23,4 +19,3 @@ impl Into<Stat> for Node<ForIn> {
         Stat::ForIn(self)
     }
 }
-

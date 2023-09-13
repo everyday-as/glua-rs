@@ -1,14 +1,14 @@
 use std::fmt::{Display, Formatter};
 
+use crate::ast::node::Node;
 use crate::ast::Exp;
 use std::fmt;
-use crate::ast::node::Node;
 
 #[derive(Clone, Debug)]
 pub struct Binary {
     pub lhs: Box<Node<Exp>>,
     pub op: BinOp,
-    pub rhs: Box<Node<Exp>>
+    pub rhs: Box<Node<Exp>>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -35,7 +35,7 @@ impl Binary {
         Self {
             lhs: Box::new(lhs),
             op,
-            rhs: Box::new(rhs)
+            rhs: Box::new(rhs),
         }
     }
 }
@@ -48,22 +48,26 @@ impl Into<Exp> for Node<Binary> {
 
 impl Display for BinOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", match self {
-            BinOp::Add => "+",
-            BinOp::And => "and",
-            BinOp::Concat => "..",
-            BinOp::Div => "/",
-            BinOp::Eq => "==",
-            BinOp::Exp => "^",
-            BinOp::Gt => ">",
-            BinOp::GtEq => ">=",
-            BinOp::Lt => "<",
-            BinOp::LtEq => "<=",
-            BinOp::Mod => "%",
-            BinOp::Mul => "*",
-            BinOp::Ne => "~=",
-            BinOp::Or => "or",
-            BinOp::Sub => "-",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                BinOp::Add => "+",
+                BinOp::And => "and",
+                BinOp::Concat => "..",
+                BinOp::Div => "/",
+                BinOp::Eq => "==",
+                BinOp::Exp => "^",
+                BinOp::Gt => ">",
+                BinOp::GtEq => ">=",
+                BinOp::Lt => "<",
+                BinOp::LtEq => "<=",
+                BinOp::Mod => "%",
+                BinOp::Mul => "*",
+                BinOp::Ne => "~=",
+                BinOp::Or => "or",
+                BinOp::Sub => "-",
+            }
+        )
     }
 }

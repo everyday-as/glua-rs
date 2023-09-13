@@ -7,7 +7,6 @@ pub mod ast;
 pub mod lexer;
 pub mod parser;
 
-
 #[cfg(test)]
 mod tests {
     use std::fs::File;
@@ -35,4 +34,3 @@ mod tests {
         write!(File::create("test.parsed").unwrap(), "{:#?}", chunk).unwrap();
     }
 }
-

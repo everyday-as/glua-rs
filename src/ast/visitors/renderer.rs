@@ -1,18 +1,16 @@
 use crate::ast::exps::Member;
 use crate::ast::node::Node;
-use crate::ast::visitors::{Visitor, walk_exp};
+use crate::ast::visitors::{walk_exp, Visitor};
 
 pub struct Renderer {
-    pub inner: String
+    pub inner: String,
 }
 
 impl Default for Renderer {
     fn default() -> Self {
         let inner = String::new();
 
-        Self {
-            inner
-        }
+        Self { inner }
     }
 }
 

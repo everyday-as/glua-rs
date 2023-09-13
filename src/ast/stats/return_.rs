@@ -1,16 +1,14 @@
-use crate::ast::{Exp, Stat};
 use crate::ast::node::Node;
+use crate::ast::{Exp, Stat};
 
 #[derive(Clone, Debug)]
 pub struct Return {
-    pub exps: Vec<Node<Exp>>
+    pub exps: Vec<Node<Exp>>,
 }
 
 impl Return {
     pub fn new(exps: Vec<Node<Exp>>) -> Self {
-        Self {
-            exps
-        }
+        Self { exps }
     }
 }
 

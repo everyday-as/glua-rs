@@ -1,14 +1,14 @@
-use std::ops::Deref;
-use logos::Span;
-use crate::ast::Exp;
 use crate::ast::exps::Member;
 use crate::ast::visitors::renderer::Renderer;
-use crate::ast::visitors::{Visitor, walk_exp};
+use crate::ast::visitors::{walk_exp, Visitor};
+use crate::ast::Exp;
+use logos::Span;
+use std::ops::Deref;
 
 #[derive(Clone, Debug)]
 pub struct Node<T> {
     pub span: Span,
-    pub inner: T
+    pub inner: T,
 }
 
 impl<T> Node<T> {

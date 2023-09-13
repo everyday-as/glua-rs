@@ -1,9 +1,9 @@
-use crate::ast::Exp;
 use crate::ast::node::Node;
+use crate::ast::Exp;
 
 #[derive(Clone, Debug)]
 pub struct TableConstructor {
-    pub fields: Vec<Field>
+    pub fields: Vec<Field>,
 }
 
 #[derive(Clone, Debug)]
@@ -14,9 +14,7 @@ pub struct Field {
 
 impl TableConstructor {
     pub fn new(fields: Vec<Field>) -> Self {
-        Self {
-            fields
-        }
+        Self { fields }
     }
 }
 

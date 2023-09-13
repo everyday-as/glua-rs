@@ -1,16 +1,14 @@
-use crate::ast::{Stat, Block};
 use crate::ast::node::Node;
+use crate::ast::{Block, Stat};
 
 #[derive(Clone, Debug)]
 pub struct Do {
-    pub body: Block
+    pub body: Block,
 }
 
 impl Do {
     pub fn new(body: Block) -> Self {
-        Self {
-            body
-        }
+        Self { body }
     }
 }
 
