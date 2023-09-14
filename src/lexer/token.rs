@@ -124,7 +124,7 @@ fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
 
                 n_str.push(ch);
 
-                for _i in 0..2 {
+                for _ in 0..2 {
                     if let Some('0'..='9') = chars.peek() {
                         n_str.push(chars.next().unwrap());
                     }
@@ -137,6 +137,16 @@ fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
                 }
 
                 value.push((num as u8) as char);
+
+                escaped = false
+            }
+
+            'x' if escaped => {
+                let hex_bytes = [chars.next()? as u8, chars.next()? as u8];
+
+                let hex = ::std::str::from_utf8(&hex_bytes).ok()?;
+
+                value.push(u8::from_str_radix(&hex, 16).ok()? as char);
 
                 escaped = false
             }
