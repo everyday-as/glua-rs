@@ -6,7 +6,7 @@ use logos::{Lexer, Logos};
 pub enum Token {
     #[token(",")]
     Comma,
-    #[regex(r"--[^\[][^\n]*", | lex | lex.slice().to_string())]
+    #[regex(r"--([^\[][^\n]*)?", | lex | lex.slice().to_string())]
     #[regex(r"--\[(=*)\[", parse_multi_line)]
     // GMod specific
     #[regex(r"//[^\n]*", | lex | lex.slice().to_string())]
@@ -177,5 +177,5 @@ fn parse_multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
         .remainder()
         .find(&closing)
         .map(|i| lexer.bump(i + closing.len()))
-        .map(|_| lexer.slice()[len..lexer.slice().len() - len].to_owned())
+        .map(|_| lexer.slice()[len..lexer.slice().len() - closing.len()].to_owned())
 }
