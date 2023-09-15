@@ -57,7 +57,7 @@ pub enum Token {
     LParens,
     // #[regex("[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_owned())]
     #[regex(
-    r"[\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}a-zA-Z_][\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}a-zA-Z0-9_]*",
+    r"[a-zA-Z_][\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}a-zA-Z0-9_]*",
     | lex | lex.slice().to_owned()
     )]
     Name(String),
@@ -95,7 +95,7 @@ pub enum Token {
     RParens,
     #[token(";")]
     Semicolon,
-    #[regex(r"\x{FEFF}", | lex | lex.slice().chars().count())]
+    #[regex(r"[\x{FEFF}]+", | lex | Some(lex.slice().chars().count()))]
     #[regex(r"[ \t\r\n\f]+", | lex | Some(lex.slice().chars().filter(| c | c == & '\n').count()))]
     Whitespace(usize),
 
