@@ -39,7 +39,7 @@ pub enum Token {
     #[token("false", | _ | Literal::Bool(false))]
     #[token("true", | _ | Literal::Bool(true))]
     #[token("nil", | _ | Literal::Nil)]
-    #[regex(r"[0-9]+(\.[0-9]+)?(e(\+|-)?[0-9]+)?", | lex | {
+    #[regex(r"([0-9]+)?(\.[0-9]+)?(e(\+|-)?[0-9]+)?", | lex | {
     lex.slice().parse().map(Literal::Number).ok()
     })]
     #[regex("0x[0-9a-fA-F]+", | lex | {
