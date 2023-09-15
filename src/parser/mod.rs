@@ -117,7 +117,7 @@ impl Parser {
         self.start_node()?;
 
         let stat = match self.peek(0)? {
-            Token::Name(_) => {
+            Token::Name(_) | Token::LParens => {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
                 match self
                     .with_rewind(
