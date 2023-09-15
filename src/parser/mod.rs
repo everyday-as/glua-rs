@@ -28,16 +28,12 @@ impl Parser {
                 .into_iter()
                 .filter_map(|(t, span)| match t {
                     Token::Whitespace(_) => {
-                        // cur_line += lines;
-
                         None
                     }
 
                     Token::Comment(_) => {
-                        // cur_line += text.chars().filter(|c| c == &'\n').count();
-
                         None
-                    }
+                    },
 
                     token => Some((token, span)),
                 })

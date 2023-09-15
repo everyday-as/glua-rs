@@ -95,6 +95,7 @@ pub enum Token {
     RParens,
     #[token(";")]
     Semicolon,
+    #[regex(r"\x{FEFF}", | lex | lex.slice().chars().count())]
     #[regex(r"[ \t\r\n\f]+", | lex | Some(lex.slice().chars().filter(| c | c == & '\n').count()))]
     Whitespace(usize),
 
