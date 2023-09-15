@@ -140,6 +140,7 @@ impl Nud for TableConstructorParselet {
                 _ => {
                     let value = parser.parse_exp()?;
 
+                    parser.consume_a(Token::Semicolon);
                     parser.consume_a(Token::Comma);
 
                     Field::new(None, value)
