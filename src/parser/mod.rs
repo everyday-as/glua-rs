@@ -209,8 +209,6 @@ impl Parser {
 
                         let cond = self.parse_exp()?;
 
-                        self.expect(Keyword::End)?;
-
                         Ok(self.produce_node(RepeatUntil::new(body, cond)).into())
                     }
 
