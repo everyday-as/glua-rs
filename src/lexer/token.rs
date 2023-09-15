@@ -11,6 +11,7 @@ pub enum Token {
     // GMod specific
     #[regex(r"//[^\n]*", | lex | lex.slice().to_string())]
     #[regex(r"/\*(~(.*\*/.*))\*/", | lex | lex.slice().to_string())]
+    #[regex(r"/\*", parse_multi_line_star)]
     Comment(String),
     #[token("...")]
     Ellipsis,
@@ -179,6 +180,28 @@ fn parse_multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
         buf.push_str(&lexer.slice()[(offset + 1)..(len - 1)]);
 
         buf.push(']');
+
+        buf
+    };
+
+    lexer
+        .remainder()
+        .find(&closing)
+        .map(|i| lexer.bump(i + closing.len()))
+        .map(|_| lexer.slice()[len..lexer.slice().len() - closing.len()].to_owned())
+}
+
+fn parse_multi_line_star(lexer: &mut Lexer<Token>) -> Option<String> {
+    let len = lexer.slice().len();
+
+    let closing = {
+        let mut buf = String::with_capacity(len);
+
+        buf.push('*');
+
+        buf.push_str(&lexer.slice()[1..(len - 1)]);
+
+        buf.push('/');
 
         buf
     };
