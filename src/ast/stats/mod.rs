@@ -8,6 +8,8 @@ pub use self::repeat_until::RepeatUntil;
 pub use self::return_::Return;
 pub use self::var_def::VarDef;
 pub use self::while_::While;
+pub use self::goto::Goto;
+pub use self::label::Label;
 
 mod assignment;
 mod do_;
@@ -19,3 +21,5 @@ mod repeat_until;
 mod return_;
 mod var_def;
 mod while_;
+mod goto;
+mod label;

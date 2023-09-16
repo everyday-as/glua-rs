@@ -32,6 +32,7 @@ pub enum Token {
     #[token("while", | _ | Keyword::While)]
     // GMod specific
     #[token("continue", | _ | Keyword::Continue)]
+    #[token("goto", | _ | Keyword::Goto)]
     Keyword(Keyword),
     #[token("{")]
     LBrace,
@@ -61,6 +62,8 @@ pub enum Token {
     | lex | lex.slice().to_owned()
     )]
     Name(String),
+    #[regex(r"::([a-zA-Z_0-9]+)::", parse_label)]
+    Label(String),
     #[token("+", | _ | Op::Add)]
     #[token("and", | _ | Op::And)]
     #[token(":", | _ | Op::Colon)]
@@ -162,6 +165,13 @@ fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
     }
 
     Some(Literal::String(value))
+}
+
+fn parse_label(lexer: &mut Lexer<Token>) -> String {
+    let len = lexer.slice().len();
+
+    // Remove starting and ending ::
+    lexer.slice()[2..len-2].to_owned()
 }
 
 fn parse_multi_line(lexer: &mut Lexer<Token>) -> Option<String> {

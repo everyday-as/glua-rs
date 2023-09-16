@@ -19,6 +19,7 @@ pub enum Keyword {
     While,
     // GMod specific
     Continue,
+    Goto,
 }
 
 impl Into<Token> for Keyword {

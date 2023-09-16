@@ -20,7 +20,11 @@ pub enum Stat {
     ForIn(Node<ForIn>),
     FunctionCall(Node<FunctionCall>),
     FunctionDef(Node<FunctionDef>),
+    // GMod specific goto statement
+    Goto(Node<Goto>),
     IfElse(Node<IfElse>),
+    // GMod specific label statement
+    Label(Node<Label>),
     MethodCall(Node<MethodCall>),
     None,
     RepeatUntil(Node<RepeatUntil>),

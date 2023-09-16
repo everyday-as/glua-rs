@@ -4,9 +4,7 @@ use crate::ast::exps::{
     Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary,
 };
 use crate::ast::node::Node;
-use crate::ast::stats::{
-    Assignment, Do, For, ForIn, FunctionDef, IfElse, RepeatUntil, Return, VarDef, While,
-};
+use crate::ast::stats::{Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, Label, RepeatUntil, Return, VarDef, While};
 use crate::ast::{Block, Exp, Stat};
 
 pub trait Visitor {
@@ -35,9 +33,13 @@ pub trait Visitor {
         walk_function_def_stat(self, &v);
     }
 
+    fn visit_goto_stat(&mut self, v: &Node<Goto>) {}
+
     fn visit_if_else_stat(&mut self, v: &Node<IfElse>) {
         walk_if_else_stat(self, &v);
     }
+
+    fn visit_label_stat(&mut self, v: &Node<Label>) {}
 
     fn visit_repeat_until_stat(&mut self, v: &Node<RepeatUntil>) {
         walk_repeat_until_stat(self, &v);
@@ -125,7 +127,9 @@ pub fn walk_stat<V: Visitor + ?Sized>(visitor: &mut V, v: &Node<Stat>) {
         Stat::ForIn(s) => visitor.visit_for_in_stat(&s),
         Stat::FunctionCall(s) => visitor.visit_function_call(&s),
         Stat::FunctionDef(s) => visitor.visit_function_def_stat(&s),
+        Stat::Goto(s) => visitor.visit_goto_stat(&s),
         Stat::IfElse(s) => visitor.visit_if_else_stat(&s),
+        Stat::Label(s) => visitor.visit_label_stat(&s),
         Stat::MethodCall(s) => visitor.visit_method_call(&s),
         Stat::RepeatUntil(s) => visitor.visit_repeat_until_stat(&s),
         Stat::Return(s) => visitor.visit_return_stat(&s),
