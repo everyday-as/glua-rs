@@ -172,25 +172,6 @@ fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
 
     let slice = lexer.slice();
 
-    // Matching "--[" is a workaround for: https://github.com/maciejhirsz/logos/issues/315#issuecomment-1714257180
-    // We cannot conditionally match [=*[ because it generates false matches, so we match the prefix
-    // --[ which may or may not be a multi-line comment. By this point, we have attempted to match a
-    // multi-line comment, so in this case it's a single line comment that happens to start with "["
-    if slice == "//" || slice == "--" || slice == "--[" {
-        let remainder = lexer.remainder();
-
-        return match remainder.find(['\r', '\n']) {
-            None => Some(remainder.to_owned()),
-            Some(offset) => {
-                lexer.bump(offset);
-
-                // Note that using 2 as an offset is valid even for "--[" because the "[" is part of
-                // the comment in this branch.
-                Some(lexer.slice()[2..].to_owned())
-            }
-        };
-    }
-
     // C-Style multi-line comment
     if slice == "/*" {
         return match lexer.remainder().find("*/") {
@@ -207,7 +188,22 @@ fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
         };
     }
 
-    unreachable!()
+    // `slice` may be "--[": https://github.com/maciejhirsz/logos/issues/315#issuecomment-1714257180
+    // We cannot conditionally match [=*[ because it generates false matches, so we match the prefix
+    // --[ which may or may not be a multi-line comment. By this point, we have attempted to match a
+    // multi-line comment, so in this case it's a single line comment that happens to start with "["
+    let remainder = lexer.remainder();
+
+    return match remainder.find(['\r', '\n']) {
+        None => Some(remainder.to_owned()),
+        Some(offset) => {
+            lexer.bump(offset);
+
+            // Note that using 2 as an offset is valid even for "--[" because the "[" is part of
+            // the comment in this branch.
+            Some(lexer.slice()[2..].to_owned())
+        }
+    };
 }
 
 fn multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
