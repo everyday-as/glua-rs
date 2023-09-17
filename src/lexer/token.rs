@@ -194,7 +194,7 @@ fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
     // multi-line comment, so in this case it's a single line comment that happens to start with "["
     let remainder = lexer.remainder();
 
-    return match remainder.find(['\r', '\n']) {
+    return match remainder.find("\n") {
         None => {
             let comment = remainder.to_owned();
 
