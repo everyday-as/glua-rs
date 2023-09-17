@@ -57,7 +57,7 @@ pub enum Token {
     LParens,
     // #[regex("[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_owned())]
     #[regex(
-    r"[a-zA-Z_][\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}a-zA-Z0-9_]*",
+    r"[a-zA-Z_\x{0400}-\x{04FF}][\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}\x{0400}-\x{04FF}a-zA-Z0-9_]*",
     | lex | lex.slice().to_owned()
     )]
     Name(String),
