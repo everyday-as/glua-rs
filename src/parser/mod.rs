@@ -61,12 +61,7 @@ impl Parser {
             stats.push(stat);
         }
 
-        if self.next_is_in(&[
-            Keyword::Break,
-            Keyword::Continue,
-            Keyword::Goto,
-            Keyword::Return,
-        ]) {
+        if self.next_is_in(&[Keyword::Break, Keyword::Continue, Keyword::Return]) {
             stats.push(self.parse_last_stat()?);
 
             self.consume_a(Token::Semicolon);
@@ -318,6 +313,19 @@ impl Parser {
                         }
                     },
 
+                    Keyword::Goto => match self.peek(0)? {
+                        // Goto must be followed by a Token::Name
+                        Token::Name(label) => {
+                            // goto Name
+                            self.fork_node()?;
+
+                            self.consume()?;
+
+                            Ok(self.produce_node(Goto::new(label)).into())
+                        }
+                        _ => Err(format!("Unexpected `{:?}`, expected name", keyword)),
+                    },
+
                     _ => Err(format!("Unexpected `{:?}`, expected stat", keyword)),
                 }
             }
@@ -361,20 +369,6 @@ impl Parser {
 
             // GMod specific
             Token::Keyword(Keyword::Continue) => Ok(Stat::Continue),
-
-            Token::Keyword(Keyword::Goto) => match self.peek(0)? {
-                // Goto must be followed by a Token::Name
-                Token::Name(label) => {
-                    // goto Name
-                    self.fork_node()?;
-
-                    self.consume()?;
-
-                    Ok(self.produce_node(Goto::new(label)).into())
-                }
-
-                token => Err(format!("Unexpected `{:?}`, expected name", token)),
-            },
 
             token => Err(format!(
                 "Unexpected `{:?}`, expected return, continue or break",
