@@ -790,7 +790,7 @@ fn get_prefix_nud_parselet(token: &Token) -> Option<&'static dyn Nud> {
     match token {
         Token::LParens => Some(&nud::ParensParselet),
 
-        Token::Name(_) => Some(&nud::NameParselet),
+        Token::Keyword(Keyword::Goto) | Token::Name(_) => Some(&nud::NameParselet),
 
         _ => None,
     }

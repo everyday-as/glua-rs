@@ -62,14 +62,16 @@ pub struct NameParselet;
 
 impl Nud for NameParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
-        if let Token::Name(name) = token {
-            let end = parser.rewind_stack.last().unwrap().1.end;
-            let start = end - name.len();
+        let name = match token {
+            Token::Name(name) => name,
+            Token::Keyword(Keyword::Goto) => String::from("goto"),
+            _ => unreachable!()
+        };
 
-            return Ok(Exp::Ref(parser.produce_node_with_span(start..end, name)));
-        }
+        let end = parser.rewind_stack.last().unwrap().1.end;
+        let start = end - name.len();
 
-        unreachable!();
+        Ok(Exp::Ref(parser.produce_node_with_span(start..end, name)))
     }
 }
 
