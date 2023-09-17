@@ -27,10 +27,6 @@ impl Parser {
             tokens: tokens
                 .into_iter()
                 .filter_map(|(t, span)| match t {
-                    Token::Whitespace(_) => {
-                        None
-                    }
-
                     Token::Comment(_) => {
                         None
                     },

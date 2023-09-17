@@ -15,14 +15,10 @@ pub fn lex(input: &str) -> Result<Vec<(Token, Span)>, String> {
 
     let mut tokens = Vec::new();
 
-    while let Some((token, span)) = lexer.next() {
-        tokens.push((
-            match token {
-                Token::Error => Err(format!("Unexpected token `{:?}` in input", span)),
-                _ => Ok(token),
-            }?,
-            span,
-        ));
+    while let Some((res, span)) = lexer.next() {
+        let token = res.map_err(|_| format!("Unrecognised token at `{:?}` in input", span))?;
+
+        tokens.push((token, span));
     }
 
     Ok(tokens)

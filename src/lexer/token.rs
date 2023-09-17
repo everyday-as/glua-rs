@@ -3,15 +3,13 @@ use crate::lexer::{Keyword, Literal, Op};
 use logos::{Lexer, Logos};
 
 #[derive(Clone, Debug, Logos, PartialEq)]
+#[logos(skip r"[ \t\r\n\f\x{FEFF}]+")]
 pub enum Token {
     #[token(",")]
     Comma,
-    #[regex(r"--([^\[\n][^\n]*)?", | lex | lex.slice().to_string())]
-    #[regex(r"--\[(=*)\[", parse_multi_line)]
-    // GMod specific
-    #[regex(r"//[^\n]*", | lex | lex.slice().to_string())]
-    #[regex(r"/\*(~(.*\*/.*))\*/", | lex | lex.slice().to_string())]
-    #[regex(r"/\*", parse_multi_line_star)]
+    #[token("/*", comment)]
+    #[token("--", comment)]
+    #[token("--[", comment)]
     Comment(String),
     #[token("...")]
     Ellipsis,
@@ -50,9 +48,9 @@ pub enum Token {
     .map(Literal::Number)
     .ok()
     })]
-    #[regex(r#""([^"\\\n]|\\.)*""#, parse_string)]
-    #[regex(r"'([^'\\\n]|\\.)*'", parse_string)]
-    #[regex(r"\[(=*)\[", | lex | parse_multi_line(lex).map(Literal::String))]
+    #[regex(r#""([^"\\\n]|\\.)*""#, string_literal)]
+    #[regex(r"'([^'\\\n]|\\.)*'", string_literal)]
+    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(Literal::String))]
     Literal(Literal),
     #[token("(")]
     LParens,
@@ -62,7 +60,7 @@ pub enum Token {
     | lex | lex.slice().to_owned()
     )]
     Name(String),
-    #[regex(r"::([a-zA-Z_0-9]+)::", parse_label)]
+    #[regex(r"::[a-zA-Z_0-9]+::", | lex | lex.slice()[2..lex.slice().len() - 2].to_owned())]
     Label(String),
     #[token("+", | _ | Op::Add)]
     #[token("and", | _ | Op::And)]
@@ -97,16 +95,10 @@ pub enum Token {
     #[token(")")]
     RParens,
     #[token(";")]
-    Semicolon,
-    #[regex(r"[\x{FEFF}]+", | lex | Some(lex.slice().chars().count()))]
-    #[regex(r"[ \t\r\n\f]+", | lex | Some(lex.slice().chars().filter(| c | c == & '\n').count()))]
-    Whitespace(usize),
-
-    #[error]
-    Error,
+    Semicolon
 }
 
-fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
+fn string_literal(lexer: &mut Lexer<Token>) -> Option<Literal> {
     let slice = lexer.slice();
 
     let pad = match slice.chars().nth(0).unwrap() {
@@ -167,52 +159,70 @@ fn parse_string(lexer: &mut Lexer<Token>) -> Option<Literal> {
     Some(Literal::String(value))
 }
 
-fn parse_label(lexer: &mut Lexer<Token>) -> String {
-    let len = lexer.slice().len();
+fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
+    // Multi-line comment
+    if lexer.slice().len() == 3 && !lexer.remainder().is_empty() && ["=", "["].contains(&&lexer.remainder()[0..1]) {
+        lexer.bump(lexer.remainder().find("[")? + 1);
 
-    // Remove starting and ending ::
-    lexer.slice()[2..len-2].to_owned()
+        return multi_line(lexer)
+    }
+
+    let slice = lexer.slice();
+
+    // Matching "--[" is a workaround for: https://github.com/maciejhirsz/logos/issues/315#issuecomment-1714257180
+    // We cannot conditionally match [=*[ because it generates false matches, so we match the prefix
+    // --[ which may or may not be a multi-line comment. By this point, we have attempted to match a
+    // multi-line comment, so in this case it's a single line comment that happens to start with "["
+    if slice == "//" || slice == "--" || slice == "--[" {
+        let remainder = lexer.remainder();
+
+        return match remainder.find(['\r', '\n']) {
+            None => Some(remainder.to_owned()),
+            Some(offset) => {
+                lexer.bump(offset);
+
+                // Note that using 2 as an offset is valid even for "--[" because the "[" is part of
+                // the comment in this branch.
+                Some(lexer.slice()[2..].to_owned())
+            }
+        };
+    }
+
+    // C-Style multi-line comment
+    if slice == "/*" {
+        return match lexer.remainder().find("*/") {
+            None => {
+                lexer.bump(lexer.remainder().len());
+
+                Some(lexer.slice()[2..].to_owned())
+            }
+            Some(end) => {
+                lexer.bump(end + 2);
+
+                Some(lexer.slice()[2..end + 4].to_owned())
+            }
+        }
+    }
+
+    unreachable!()
 }
 
-fn parse_multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
-    // Offset past comment dashes
-    let offset = match "-" == &lexer.slice()[0..1] {
-        true => 2,
-        false => 0,
-    };
+fn multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
+    let slice = lexer.slice();
 
-    let len = lexer.slice().len();
+    // Ideally we could create a sub-lexer without this prefix in `comment`
+    let offset = 2 * slice.starts_with("-") as usize;
+
+    let len = slice.len();
 
     let closing = {
-        let mut buf = String::with_capacity(len);
+        let mut buf = String::with_capacity(len - offset);
 
         buf.push(']');
 
         buf.push_str(&lexer.slice()[(offset + 1)..(len - 1)]);
 
         buf.push(']');
-
-        buf
-    };
-
-    lexer
-        .remainder()
-        .find(&closing)
-        .map(|i| lexer.bump(i + closing.len()))
-        .map(|_| lexer.slice()[len..lexer.slice().len() - closing.len()].to_owned())
-}
-
-fn parse_multi_line_star(lexer: &mut Lexer<Token>) -> Option<String> {
-    let len = lexer.slice().len();
-
-    let closing = {
-        let mut buf = String::with_capacity(len);
-
-        buf.push('*');
-
-        buf.push_str(&lexer.slice()[1..(len - 1)]);
-
-        buf.push('/');
 
         buf
     };
