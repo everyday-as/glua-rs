@@ -36,13 +36,13 @@ pub trait Visitor {
         walk_function_def_stat(self, &v);
     }
 
-    fn visit_goto_stat(&mut self, v: &Node<Goto>) {}
+    fn visit_goto_stat(&mut self, _v: &Node<Goto>) {}
 
     fn visit_if_else_stat(&mut self, v: &Node<IfElse>) {
         walk_if_else_stat(self, &v);
     }
 
-    fn visit_label_stat(&mut self, v: &Node<Label>) {}
+    fn visit_label_stat(&mut self, _v: &Node<Label>) {}
 
     fn visit_repeat_until_stat(&mut self, v: &Node<RepeatUntil>) {
         walk_repeat_until_stat(self, &v);
