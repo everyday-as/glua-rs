@@ -535,6 +535,8 @@ impl Parser {
 
         let body = self.parse_block()?;
 
+        self.consume_node()?;
+
         self.expect(Keyword::End)?;
 
         Ok(self.produce_node(Function::new(params, body)))
