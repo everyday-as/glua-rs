@@ -7,6 +7,7 @@ use logos::{Lexer, Logos};
 pub enum Token {
     #[token(",")]
     Comma,
+    #[token("//", comment)]
     #[token("/*", comment)]
     #[token("--", comment)]
     #[token("--[", comment)]
