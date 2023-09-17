@@ -195,7 +195,13 @@ fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
     let remainder = lexer.remainder();
 
     return match remainder.find(['\r', '\n']) {
-        None => Some(remainder.to_owned()),
+        None => {
+            let comment = remainder.to_owned();
+
+            lexer.bump(comment.len());
+
+            Some(comment)
+        },
         Some(offset) => {
             lexer.bump(offset);
 
