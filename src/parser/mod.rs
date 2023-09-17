@@ -27,9 +27,7 @@ impl Parser {
             tokens: tokens
                 .into_iter()
                 .filter_map(|(t, span)| match t {
-                    Token::Comment(_) => {
-                        None
-                    },
+                    Token::Comment(_) => None,
 
                     token => Some((token, span)),
                 })
@@ -315,7 +313,7 @@ impl Parser {
                         }
                     },
 
-                    Keyword::Goto =>  match self.peek(0)? {
+                    Keyword::Goto => match self.peek(0)? {
                         // Goto must be followed by a Token::Name
                         Token::Name(label) => {
                             // goto Name
@@ -325,7 +323,7 @@ impl Parser {
 
                             Ok(self.produce_node(Goto::new(label)).into())
                         }
-                        _ => Err(format!("Unexpected `{:?}`, expected name", keyword))
+                        _ => Err(format!("Unexpected `{:?}`, expected name", keyword)),
                     },
 
                     _ => Err(format!("Unexpected `{:?}`, expected stat", keyword)),
@@ -338,7 +336,7 @@ impl Parser {
                 self.fork_node()?;
 
                 Ok(self.produce_node(Label::new(name)).into())
-            },
+            }
 
             token => Err(format!("Unexpected `{:?}`, expected stat", token)),
         };

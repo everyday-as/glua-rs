@@ -1,9 +1,9 @@
 use crate::ast::node::Node;
-use crate::ast::{Stat};
+use crate::ast::Stat;
 
 #[derive(Clone, Debug)]
 pub struct Goto {
-    pub label: String
+    pub label: String,
 }
 
 impl Goto {

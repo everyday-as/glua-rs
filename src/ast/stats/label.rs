@@ -1,16 +1,14 @@
 use crate::ast::node::Node;
-use crate::ast::{Stat};
+use crate::ast::Stat;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Label {
-    name: String
+    name: String,
 }
 
 impl Label {
     pub fn new(name: String) -> Self {
-        Self {
-            name
-        }
+        Self { name }
     }
 }
 

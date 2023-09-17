@@ -95,7 +95,7 @@ pub enum Token {
     #[token(")")]
     RParens,
     #[token(";")]
-    Semicolon
+    Semicolon,
 }
 
 fn string_literal(lexer: &mut Lexer<Token>) -> Option<Literal> {
@@ -161,10 +161,13 @@ fn string_literal(lexer: &mut Lexer<Token>) -> Option<Literal> {
 
 fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
     // Multi-line comment
-    if lexer.slice().len() == 3 && !lexer.remainder().is_empty() && ["=", "["].contains(&&lexer.remainder()[0..1]) {
+    if lexer.slice().len() == 3
+        && !lexer.remainder().is_empty()
+        && ["=", "["].contains(&&lexer.remainder()[0..1])
+    {
         lexer.bump(lexer.remainder().find("[")? + 1);
 
-        return multi_line(lexer)
+        return multi_line(lexer);
     }
 
     let slice = lexer.slice();
@@ -201,7 +204,7 @@ fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
 
                 Some(lexer.slice()[2..end + 4].to_owned())
             }
-        }
+        };
     }
 
     unreachable!()

@@ -4,7 +4,10 @@ use crate::ast::exps::{
     Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary,
 };
 use crate::ast::node::Node;
-use crate::ast::stats::{Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, Label, RepeatUntil, Return, VarDef, While};
+use crate::ast::stats::{
+    Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, Label, RepeatUntil, Return, VarDef,
+    While,
+};
 use crate::ast::{Block, Exp, Stat};
 
 pub trait Visitor {
