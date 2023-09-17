@@ -51,43 +51,6 @@ impl Parser {
         }
     }
 
-    fn start_node(&mut self) -> Result<(), String> {
-        match self.tokens.front() {
-            Some(token) => {
-                self.spans.push(token.1.start);
-
-                Ok(())
-            }
-            None => Err("Unexpected EOF".to_owned()),
-        }
-    }
-
-    fn fork_node(&mut self) -> Result<(), String> {
-        self.spans.last().copied().map(|span| self.spans.push(span));
-
-        Ok(())
-    }
-
-    fn consume_node(&mut self) -> Result<(), String> {
-        self.spans.pop();
-
-        Ok(())
-    }
-
-    fn produce_node<T>(&mut self, inner: T) -> Node<T> {
-        let start = self.spans.pop().unwrap();
-        let end = self.rewind_stack.last().unwrap().1.end;
-
-        Node {
-            span: start..end,
-            inner,
-        }
-    }
-
-    fn produce_node_with_span<T>(&self, span: Span, inner: T) -> Node<T> {
-        Node { span, inner }
-    }
-
     fn parse_block(&mut self) -> Result<Block, String> {
         let mut stats = Vec::new();
 
@@ -646,6 +609,43 @@ impl Parser {
                 false => Err(err),
             },
         }
+    }
+
+    fn start_node(&mut self) -> Result<(), String> {
+        match self.tokens.front() {
+            Some(token) => {
+                self.spans.push(token.1.start);
+
+                Ok(())
+            }
+            None => Err("Unexpected EOF".to_owned()),
+        }
+    }
+
+    fn fork_node(&mut self) -> Result<(), String> {
+        self.spans.last().copied().map(|span| self.spans.push(span));
+
+        Ok(())
+    }
+
+    fn consume_node(&mut self) -> Result<(), String> {
+        self.spans.pop();
+
+        Ok(())
+    }
+
+    fn produce_node<T>(&mut self, inner: T) -> Node<T> {
+        let start = self.spans.pop().unwrap();
+        let end = self.rewind_stack.last().unwrap().1.end;
+
+        Node {
+            span: start..end,
+            inner,
+        }
+    }
+
+    fn produce_node_with_span<T>(&self, span: Span, inner: T) -> Node<T> {
+        Node { span, inner }
     }
     // </Helpers>
 
