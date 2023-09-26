@@ -97,7 +97,7 @@ impl Parser {
                 {
                     // `Assignment`
                     Some(var) => {
-                        self.start_node()?;
+                        self.fork_node()?;
 
                         let mut vars = vec![var];
 
