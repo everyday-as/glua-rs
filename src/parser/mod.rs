@@ -460,9 +460,6 @@ impl Parser {
             }
         }
 
-        // Consume the latest node so it does not bleed into other areas
-        self.consume_node()?;
-
         Ok(lhs)
     }
 
@@ -698,6 +695,8 @@ impl Parser {
 
             // function"string"
             Token::Literal(Literal::String(arg)) => {
+                self.fork_node()?;
+
                 let inner_node = self.produce_node(arg);
 
                 let node = self.produce_node(Exp::String(inner_node));
