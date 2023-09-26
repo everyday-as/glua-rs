@@ -10,11 +10,11 @@ pub struct AccessParselet;
 
 impl Led for AccessParselet {
     fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String> {
-        parser.start_node()?;
-
         match token {
             // foo[Exp]
             Token::LBracket => {
+                parser.start_node()?;
+
                 let exp = parser.parse_exp()?;
 
                 parser.expect(Token::RBracket)?;
@@ -24,6 +24,8 @@ impl Led for AccessParselet {
 
             // foo.Name
             Token::Op(Op::Dot) => {
+                parser.start_node()?;
+
                 let name = parser.parse_name()?;
                 Ok(parser.produce_node(Member::new(lhs, name)).into())
             }

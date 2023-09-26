@@ -55,7 +55,7 @@ impl Parser {
         // Rewind here, because Lua has SYNTACTICALLY ASCENDED THE MORTAL FUCKING PLANE
         while let Some(stat) = self.with_rewind(Self::parse_stat, |e| {
             e == "Unexpected EOF" || e.ends_with("expected stat")
-        })? {
+        }, true)? {
             self.consume_a(Token::Semicolon);
 
             stats.push(stat);
@@ -91,12 +91,13 @@ impl Parser {
                             }
                         },
                         |e| e.is_empty(),
+                        false
                     )?
                     .clone()
                 {
                     // `Assignment`
                     Some(var) => {
-                        self.fork_node()?;
+                        self.start_node()?;
 
                         let mut vars = vec![var];
 
@@ -331,9 +332,9 @@ impl Parser {
             }
 
             Token::Label(name) => {
-                self.consume()?;
+                self.start_node()?;
 
-                self.fork_node()?;
+                self.consume()?;
 
                 Ok(self.produce_node(Label::new(name)).into())
             }
@@ -345,7 +346,8 @@ impl Parser {
     }
 
     fn parse_last_stat(&mut self) -> Result<Node<Stat>, String> {
-        self.fork_node()?;
+        self.start_node()?;
+
         let (token, _) = self.consume()?;
 
         let stat = match token {
@@ -353,6 +355,7 @@ impl Parser {
                 match self.with_rewind(
                     |parser| parser.parse_list(Self::parse_exp),
                     |e| e.ends_with("expected expression"),
+                    false
                 )? {
                     Some(exps) => {
                         self.fork_node()?;
@@ -457,6 +460,7 @@ impl Parser {
             }
         }
 
+        // Consume the latest node so it does not bleed into other areas
         self.consume_node()?;
 
         Ok(lhs)
@@ -478,6 +482,8 @@ impl Parser {
     }
 
     fn parse_function(&mut self) -> Result<Node<Function>, String> {
+        self.start_node()?;
+
         self.expect(Token::LParens)?;
 
         let mut params = self.parse_delimited(Token::Comma, Parser::parse_name, |token| {
@@ -584,7 +590,7 @@ impl Parser {
         false
     }
 
-    fn with_rewind<T, F, C>(&mut self, func: F, can_rewind: C) -> Result<Option<T>, String>
+    fn with_rewind<T, F, C>(&mut self, func: F, can_rewind: C, consume_on_error: bool) -> Result<Option<T>, String>
     where
         F: FnOnce(&mut Parser) -> Result<T, String>,
         C: FnOnce(&str) -> bool,
@@ -593,21 +599,31 @@ impl Parser {
 
         match func(self) {
             Ok(result) => Ok(Some(result)),
-            Err(err) => match can_rewind(&err) {
-                true => {
-                    while self.rewind_stack.len() > rewind_to {
-                        self.tokens.push_front(self.rewind_stack.pop().unwrap());
-                    }
-
-                    Ok(None)
+            Err(err) => {
+                if consume_on_error {
+                    self.consume_node()?;
                 }
 
-                false => Err(err),
+                match can_rewind(&err) {
+                    true => {
+                        while self.rewind_stack.len() > rewind_to {
+                            self.tokens.push_front(self.rewind_stack.pop().unwrap());
+                        }
+
+                        Ok(None)
+                    }
+
+                    false => Err(err),
+                }
             },
         }
     }
 
+    // #[track_caller]
     fn start_node(&mut self) -> Result<(), String> {
+        // let caller_location = std::panic::Location::caller();
+        // println!("start_node from {}:{}", caller_location.file(), caller_location.line());
+
         match self.tokens.front() {
             Some(token) => {
                 self.spans.push(token.1.start);
@@ -618,19 +634,31 @@ impl Parser {
         }
     }
 
+    // #[track_caller]
     fn fork_node(&mut self) -> Result<(), String> {
+        // let caller_location = std::panic::Location::caller();
+        // println!("fork_node from {}:{}", caller_location.file(), caller_location.line());
+
         self.spans.last().copied().map(|span| self.spans.push(span));
 
         Ok(())
     }
 
+    // #[track_caller]
     fn consume_node(&mut self) -> Result<(), String> {
+        // let caller_location = std::panic::Location::caller();
+        // println!("consume_node from {}:{}", caller_location.file(), caller_location.line());
+
         self.spans.pop();
 
         Ok(())
     }
 
+    // #[track_caller]
     fn produce_node<T>(&mut self, inner: T) -> Node<T> {
+        // let caller_location = std::panic::Location::caller();
+        // println!("produce_node from {}:{}", caller_location.file(), caller_location.line());
+
         let start = self.spans.pop().unwrap();
         let end = self.rewind_stack.last().unwrap().1.end;
 
@@ -663,8 +691,6 @@ impl Parser {
 
             // function{ table }
             Token::LBrace => {
-                self.fork_node()?;
-
                 let exp = TableConstructorParselet.parse(self, token)?;
 
                 Ok(vec![self.produce_node(exp)])
@@ -672,10 +698,8 @@ impl Parser {
 
             // function"string"
             Token::Literal(Literal::String(arg)) => {
-                self.fork_node()?;
                 let inner_node = self.produce_node(arg);
 
-                self.fork_node()?;
                 let node = self.produce_node(Exp::String(inner_node));
 
                 Ok(vec![node])
