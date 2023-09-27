@@ -30,27 +30,12 @@ pub struct LiteralParselet;
 
 impl Nud for LiteralParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
-        let end = parser.rewind_stack.last().unwrap().1.end;
-
         match token {
             Token::Literal(literal) => match literal {
-                Literal::Bool(value) => {
-                    let start = end - value.to_string().len();
-                    Ok(Exp::Bool(parser.produce_node_with_span(start..end, value)))
-                }
+                Literal::Bool(value) => Ok(Exp::Bool(value)),
                 Literal::Nil => Ok(Exp::Nil),
-                Literal::Number(value) => {
-                    let start = end - value.to_string().len();
-                    Ok(Exp::Number(
-                        parser.produce_node_with_span(start..end, value),
-                    ))
-                }
-                Literal::String(value) => {
-                    let start = end - value.len();
-                    Ok(Exp::String(
-                        parser.produce_node_with_span(start..end, value),
-                    ))
-                }
+                Literal::Number(value) => Ok(Exp::Number(value)),
+                Literal::String(value) => Ok(Exp::String(value.into_owned())),
             },
 
             _ => unreachable!(),
@@ -61,17 +46,14 @@ impl Nud for LiteralParselet {
 pub struct NameParselet;
 
 impl Nud for NameParselet {
-    fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
+    fn parse(&self, _parser: &mut Parser, token: Token) -> Result<Exp, String> {
         let name = match token {
             Token::Name(name) => name,
-            Token::Keyword(Keyword::Goto) => String::from("goto"),
-            _ => unreachable!()
+            Token::Keyword(Keyword::Goto) => "goto",
+            _ => unreachable!(),
         };
 
-        let end = parser.rewind_stack.last().unwrap().1.end;
-        let start = end - name.len();
-
-        Ok(Exp::Ref(parser.produce_node_with_span(start..end, name)))
+        Ok(Exp::Ref(name.to_owned()))
     }
 }
 
@@ -95,24 +77,17 @@ impl Nud for TableConstructorParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
         assert_eq!(Token::LBrace, token);
 
-        parser.fork_node()?;
-
         let mut fields = Vec::new();
 
         while !parser.consume_a(Token::RBrace) {
             fields.push(match parser.peek(0)? {
                 // { name = Exp }
-                Token::Name(name) if parser.peek(1) == Ok(Token::Op(Op::Eq)) => {
+                Token::Name(_) if parser.peek(1) == Ok(Token::Op(Op::Eq)) => {
+                    let key = parser.node(|p| p.parse_name().map(Exp::String))?;
+
                     parser.consume()?;
-                    parser.consume()?;
 
-                    parser.fork_node()?;
-                    let inner_node = parser.produce_node(name);
-
-                    parser.fork_node()?;
-                    let node = parser.produce_node(Exp::String(inner_node));
-
-                    let field = Field::new(Some(node), parser.parse_exp()?);
+                    let field = Field::new(Some(key), parser.parse_exp()?);
 
                     parser.consume_a(Token::Semicolon);
                     parser.consume_a(Token::Comma);
@@ -150,7 +125,7 @@ impl Nud for TableConstructorParselet {
             })
         }
 
-        Ok(parser.produce_node(TableConstructor::new(fields)).into())
+        Ok(TableConstructor::new(fields).into())
     }
 }
 
@@ -158,8 +133,6 @@ pub struct UnaryParselet;
 
 impl Nud for UnaryParselet {
     fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
-        parser.start_node()?;
-
         let op = match token {
             Token::Op(Op::Len) => UnOp::Len,
             Token::Op(Op::Not) => UnOp::Not,
@@ -168,7 +141,6 @@ impl Nud for UnaryParselet {
             _ => unreachable!(),
         };
 
-        let unary = Unary::new(op, parser.parse_exp_prec(Precedence::Unary)?);
-        Ok(parser.produce_node(unary).into())
+        Ok(Unary::new(op, parser.parse_exp_prec(Precedence::Unary)?).into())
     }
 }

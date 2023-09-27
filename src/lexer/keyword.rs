@@ -22,8 +22,8 @@ pub enum Keyword {
     Goto,
 }
 
-impl Into<Token> for Keyword {
-    fn into(self) -> Token {
+impl Into<Token<'_>> for Keyword {
+    fn into(self) -> Token<'static> {
         Token::Keyword(self)
     }
 }

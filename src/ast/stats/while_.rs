@@ -13,7 +13,7 @@ impl While {
     }
 }
 
-impl Into<Stat> for Node<While> {
+impl Into<Stat> for While {
     fn into(self) -> Stat {
         Stat::While(self)
     }

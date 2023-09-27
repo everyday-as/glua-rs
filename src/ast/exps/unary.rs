@@ -26,7 +26,7 @@ impl Unary {
     }
 }
 
-impl Into<Exp> for Node<Unary> {
+impl Into<Exp> for Unary {
     fn into(self) -> Exp {
         Exp::Unary(self)
     }

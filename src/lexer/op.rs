@@ -24,8 +24,8 @@ pub enum Op {
     Sub,
 }
 
-impl Into<Token> for Op {
-    fn into(self) -> Token {
+impl Into<Token<'_>> for Op {
+    fn into(self) -> Token<'static> {
         Token::Op(self)
     }
 }

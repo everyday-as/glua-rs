@@ -12,7 +12,7 @@ impl Goto {
     }
 }
 
-impl Into<Stat> for Node<Goto> {
+impl Into<Stat> for Goto {
     fn into(self) -> Stat {
         Stat::Goto(self)
     }

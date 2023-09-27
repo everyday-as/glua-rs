@@ -40,7 +40,7 @@ impl Binary {
     }
 }
 
-impl Into<Exp> for Node<Binary> {
+impl Into<Exp> for Binary {
     fn into(self) -> Exp {
         Exp::Binary(self)
     }

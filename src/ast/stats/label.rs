@@ -12,7 +12,7 @@ impl Label {
     }
 }
 
-impl Into<Stat> for Node<Label> {
+impl Into<Stat> for Label {
     fn into(self) -> Stat {
         Stat::Label(self)
     }

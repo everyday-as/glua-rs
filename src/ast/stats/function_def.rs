@@ -15,7 +15,7 @@ impl FunctionDef {
     }
 }
 
-impl Into<Stat> for Node<FunctionDef> {
+impl Into<Stat> for FunctionDef {
     fn into(self) -> Stat {
         Stat::FunctionDef(self)
     }

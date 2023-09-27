@@ -1,6 +1,6 @@
-extern crate core;
+#![feature(test)]
+extern crate test;
 
-pub use self::lexer::lex;
 pub use self::parser::Parser;
 
 pub mod ast;
@@ -11,26 +11,41 @@ pub mod parser;
 mod tests {
     use std::fs::File;
     use std::io::{Read, Write};
+    use test::bench::Bencher;
 
     use crate::lexer::lex;
     use crate::Parser;
 
+    static CODE: &'static str = include_str!("../test.lua");
+
     #[test]
     fn it_works() {
-        let lua = {
-            let mut file = File::open("test.lua").unwrap();
+        let tokens = lex(CODE).unwrap();
 
-            let mut buf = String::new();
+        // dbg!(&tokens);
 
-            let _ = file.read_to_string(&mut buf);
-
-            buf
-        };
-
-        let mut parser = Parser::new(lex(&lua).unwrap());
+        let mut parser = Parser::new(tokens);
 
         let chunk = parser.parse_chunk().unwrap();
 
+        // dbg!(&chunk);
+
         write!(File::create("test.parsed").unwrap(), "{:#?}", chunk).unwrap();
+    }
+
+    #[bench]
+    fn lexer(b: &mut Bencher) {
+        b.iter(|| lex(CODE).unwrap());
+    }
+
+    #[bench]
+    fn parser(b: &mut Bencher) {
+        b.iter(|| {
+            let tokens = lex(CODE).unwrap();
+
+            let mut parser = Parser::new(tokens);
+
+            parser.parse_chunk().unwrap()
+        });
     }
 }

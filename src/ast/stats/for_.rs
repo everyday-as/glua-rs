@@ -25,7 +25,7 @@ impl For {
     }
 }
 
-impl Into<Stat> for Node<For> {
+impl Into<Stat> for For {
     fn into(self) -> Stat {
         Stat::For(self)
     }

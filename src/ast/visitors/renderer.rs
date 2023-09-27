@@ -21,13 +21,13 @@ impl Renderer {
 }
 
 impl Visitor for Renderer {
-    fn visit_member_exp(&mut self, v: &Node<Member>) {
-        walk_exp(self, &v.lhs);
+    fn visit_member_exp(&mut self, v: Node<&Member>) {
+        walk_exp(self, Node::as_ref(&v.lhs));
 
         self.inner.push_str(&format!(".{}", v.name));
     }
 
-    fn visit_ref_exp(&mut self, v: &Node<String>) {
-        self.inner.push_str(v);
+    fn visit_ref_exp(&mut self, v: Node<&String>) {
+        self.inner.push_str(v.as_str());
     }
 }

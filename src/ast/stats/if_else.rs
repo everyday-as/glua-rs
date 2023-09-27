@@ -25,7 +25,7 @@ impl IfElse {
     }
 }
 
-impl Into<Stat> for Node<IfElse> {
+impl Into<Stat> for IfElse {
     fn into(self) -> Stat {
         Stat::IfElse(self)
     }

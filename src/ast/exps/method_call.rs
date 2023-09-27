@@ -18,7 +18,7 @@ impl MethodCall {
     }
 }
 
-impl Into<Exp> for Node<MethodCall> {
+impl Into<Exp> for MethodCall {
     fn into(self) -> Exp {
         Exp::MethodCall(self)
     }

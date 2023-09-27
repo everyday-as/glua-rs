@@ -12,7 +12,7 @@ impl Return {
     }
 }
 
-impl Into<Stat> for Node<Return> {
+impl Into<Stat> for Return {
     fn into(self) -> Stat {
         Stat::Return(self)
     }

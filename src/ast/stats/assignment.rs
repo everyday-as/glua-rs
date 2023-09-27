@@ -13,7 +13,7 @@ impl Assignment {
     }
 }
 
-impl Into<Stat> for Node<Assignment> {
+impl Into<Stat> for Assignment {
     fn into(self) -> Stat {
         Stat::Assignment(self)
     }

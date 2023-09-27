@@ -13,7 +13,7 @@ impl Function {
     }
 }
 
-impl Into<Exp> for Node<Function> {
+impl Into<Exp> for Function {
     fn into(self) -> Exp {
         Exp::Function(self)
     }

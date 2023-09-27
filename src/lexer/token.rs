@@ -1,17 +1,18 @@
 use crate::lexer::{Keyword, Literal, Op};
+use std::borrow::Cow;
 
 use logos::{Lexer, Logos};
 
 #[derive(Clone, Debug, Logos, PartialEq)]
 #[logos(skip r"[ \t\r\n\f\x{FEFF}]+")]
-pub enum Token {
+pub enum Token<'a> {
     #[token(",")]
     Comma,
     #[token("//", comment)]
     #[token("/*", comment)]
     #[token("--", comment)]
     #[token("--[", comment)]
-    Comment(String),
+    Comment(&'a str),
     #[token("...")]
     Ellipsis,
     #[token("break", | _ | Keyword::Break)]
@@ -51,18 +52,18 @@ pub enum Token {
     })]
     #[regex(r#""([^"\\\n]|\\.)*""#, string_literal)]
     #[regex(r"'([^'\\\n]|\\.)*'", string_literal)]
-    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(Literal::String))]
-    Literal(Literal),
+    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(Cow::Borrowed).map(Literal::String))]
+    Literal(Literal<'a>),
     #[token("(")]
     LParens,
     // #[regex("[a-zA-Z_][a-zA-Z0-9_]*", |lex| lex.slice().to_owned())]
     #[regex(
     r"[a-zA-Z_\x{0400}-\x{04FF}][\x{80}-\x{31FFF}\x{E0000}-\x{E0FFF}\x{0400}-\x{04FF}a-zA-Z0-9_]*",
-    | lex | lex.slice().to_owned()
+    | lex | lex.slice()
     )]
-    Name(String),
-    #[regex(r"::[a-zA-Z_0-9]+::", | lex | lex.slice()[2..lex.slice().len() - 2].to_owned())]
-    Label(String),
+    Name(&'a str),
+    #[regex(r"::[a-zA-Z_0-9]+::", | lex | &lex.slice()[2..lex.slice().len() - 2])]
+    Label(&'a str),
     #[token("+", | _ | Op::Add)]
     #[token("and", | _ | Op::And)]
     #[token(":", | _ | Op::Colon)]
@@ -99,7 +100,7 @@ pub enum Token {
     Semicolon,
 }
 
-fn string_literal(lexer: &mut Lexer<Token>) -> Option<Literal> {
+fn string_literal<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<Literal<'a>> {
     let slice = lexer.slice();
 
     let pad = match slice.chars().nth(0).unwrap() {
@@ -107,7 +108,7 @@ fn string_literal(lexer: &mut Lexer<Token>) -> Option<Literal> {
         _ => 1,
     };
 
-    let mut value = String::with_capacity(slice.len());
+    let mut value = String::with_capacity(slice.len() - (2 * pad));
 
     let mut escaped = false;
 
@@ -157,10 +158,10 @@ fn string_literal(lexer: &mut Lexer<Token>) -> Option<Literal> {
         }
     }
 
-    Some(Literal::String(value))
+    Some(Literal::String(Cow::Owned(value)))
 }
 
-fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
+fn comment<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
     // Multi-line comment
     if lexer.slice().len() == 3
         && !lexer.remainder().is_empty()
@@ -179,12 +180,12 @@ fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
             None => {
                 lexer.bump(lexer.remainder().len());
 
-                Some(lexer.slice()[2..].to_owned())
+                Some(&lexer.slice()[2..])
             }
             Some(end) => {
                 lexer.bump(end + 2);
 
-                Some(lexer.slice()[2..end + 4].to_owned())
+                Some(&lexer.slice()[2..end + 4])
             }
         };
     }
@@ -197,23 +198,21 @@ fn comment(lexer: &mut Lexer<Token>) -> Option<String> {
 
     return match remainder.find("\n") {
         None => {
-            let comment = remainder.to_owned();
+            lexer.bump(remainder.len());
 
-            lexer.bump(comment.len());
-
-            Some(comment)
-        },
+            Some(remainder)
+        }
         Some(offset) => {
             lexer.bump(offset);
 
             // Note that using 2 as an offset is valid even for "--[" because the "[" is part of
             // the comment in this branch.
-            Some(lexer.slice()[2..].to_owned())
+            Some(&lexer.slice()[2..])
         }
     };
 }
 
-fn multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
+fn multi_line<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
     let slice = lexer.slice();
 
     // Ideally we could create a sub-lexer without this prefix in `comment`
@@ -237,5 +236,5 @@ fn multi_line(lexer: &mut Lexer<Token>) -> Option<String> {
         .remainder()
         .find(&closing)
         .map(|i| lexer.bump(i + closing.len()))
-        .map(|_| lexer.slice()[len..lexer.slice().len() - closing.len()].to_owned())
+        .map(|_| &lexer.slice()[len..lexer.slice().len() - closing.len()])
 }
