@@ -11,7 +11,7 @@ pub mod parser;
 mod tests {
     use std::fs::File;
     use std::io::Write;
-    use test::bench::Bencher;
+    // use test::bench::Bencher;
 
     use crate::lexer::lex;
     use crate::Parser;
