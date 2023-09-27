@@ -26,12 +26,6 @@ impl Unary {
     }
 }
 
-impl Into<Exp> for Unary {
-    fn into(self) -> Exp {
-        Exp::Unary(self)
-    }
-}
-
 impl Display for UnOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(

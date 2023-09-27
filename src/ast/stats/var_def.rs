@@ -1,5 +1,5 @@
 use crate::ast::node::Node;
-use crate::ast::{Exp, Stat};
+use crate::ast::Exp;
 
 #[derive(Clone, Debug)]
 pub struct VarDef {
@@ -10,11 +10,5 @@ pub struct VarDef {
 impl VarDef {
     pub fn new(names: Vec<String>, init_exps: Option<Vec<Node<Exp>>>) -> Self {
         Self { names, init_exps }
-    }
-}
-
-impl Into<Stat> for VarDef {
-    fn into(self) -> Stat {
-        Stat::VarDef(self)
     }
 }

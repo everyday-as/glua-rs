@@ -1,5 +1,6 @@
 use crate::ast::node::Node;
-use crate::ast::{Block, Exp, Stat};
+use crate::ast::Block;
+use crate::ast::Exp;
 
 #[derive(Clone, Debug)]
 pub struct IfElse {
@@ -22,11 +23,5 @@ impl IfElse {
             else_ifs,
             else_block,
         }
-    }
-}
-
-impl Into<Stat> for IfElse {
-    fn into(self) -> Stat {
-        Stat::IfElse(self)
     }
 }

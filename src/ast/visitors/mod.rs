@@ -1,5 +1,3 @@
-pub mod renderer;
-
 use crate::ast::exps::{
     Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary,
 };
@@ -8,8 +6,11 @@ use crate::ast::stats::{
     Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, Label, RepeatUntil, Return, VarDef,
     While,
 };
-use crate::ast::{Block, Exp, Stat};
-use std::rc::Rc;
+use crate::ast::Block;
+use crate::ast::Exp;
+use crate::ast::Stat;
+
+pub mod renderer;
 
 pub trait Visitor {
     // Statements
@@ -168,7 +169,7 @@ pub fn walk_for_stat<V: Visitor + ?Sized>(visitor: &mut V, v: Node<&For>) {
     visitor.visit_exp(Node::as_ref(&v.test));
 
     if let Some(ref update) = v.update {
-        visitor.visit_exp(Node::as_ref(&update));
+        visitor.visit_exp(Node::as_ref(update));
     }
 }
 
@@ -198,7 +199,7 @@ pub fn walk_if_else_stat<V: Visitor + ?Sized>(visitor: &mut V, v: Node<&IfElse>)
         block
             .iter()
             .for_each(|s| visitor.visit_stat(Node::as_ref(s)));
-        visitor.visit_exp(Node::as_ref(&exp));
+        visitor.visit_exp(Node::as_ref(exp));
     });
 
     if let Some(else_block) = &v.else_block {

@@ -15,9 +15,3 @@ impl Index {
         }
     }
 }
-
-impl Into<Exp> for Index {
-    fn into(self) -> Exp {
-        Exp::Index(self)
-    }
-}

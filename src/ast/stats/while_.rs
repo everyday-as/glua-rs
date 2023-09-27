@@ -1,5 +1,6 @@
 use crate::ast::node::Node;
-use crate::ast::{Block, Exp, Stat};
+use crate::ast::Block;
+use crate::ast::Exp;
 
 #[derive(Clone, Debug)]
 pub struct While {
@@ -10,11 +11,5 @@ pub struct While {
 impl While {
     pub fn new(cond: Node<Exp>, body: Block) -> Self {
         Self { body, cond }
-    }
-}
-
-impl Into<Stat> for While {
-    fn into(self) -> Stat {
-        Stat::While(self)
     }
 }

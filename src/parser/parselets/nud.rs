@@ -29,7 +29,7 @@ impl Nud for FunctionParselet {
 pub struct LiteralParselet;
 
 impl Nud for LiteralParselet {
-    fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String> {
+    fn parse(&self, _parser: &mut Parser, token: Token) -> Result<Exp, String> {
         match token {
             Token::Literal(literal) => match literal {
                 Literal::Bool(value) => Ok(Exp::Bool(value)),

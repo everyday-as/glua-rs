@@ -15,9 +15,3 @@ impl FunctionCall {
         }
     }
 }
-
-impl Into<Exp> for FunctionCall {
-    fn into(self) -> Exp {
-        Exp::FunctionCall(self)
-    }
-}

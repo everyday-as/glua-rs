@@ -15,9 +15,3 @@ impl Member {
         }
     }
 }
-
-impl Into<Exp> for Member {
-    fn into(self) -> Exp {
-        Exp::Member(self)
-    }
-}

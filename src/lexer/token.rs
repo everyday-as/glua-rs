@@ -100,10 +100,28 @@ pub enum Token<'a> {
     Semicolon,
 }
 
+impl From<Keyword> for Token<'_> {
+    fn from(value: Keyword) -> Self {
+        Self::Keyword(value)
+    }
+}
+
+impl<'a> From<Literal<'a>> for Token<'a> {
+    fn from(value: Literal<'a>) -> Self {
+        Self::Literal(value)
+    }
+}
+
+impl From<Op> for Token<'_> {
+    fn from(value: Op) -> Self {
+        Self::Op(value)
+    }
+}
+
 fn string_literal<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<Literal<'a>> {
     let slice = lexer.slice();
 
-    let pad = match slice.chars().nth(0).unwrap() {
+    let pad = match slice.chars().next().unwrap() {
         '[' => 2,
         _ => 1,
     };
@@ -145,7 +163,7 @@ fn string_literal<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<Literal<'a>> {
 
                 let hex = ::std::str::from_utf8(&hex_bytes).ok()?;
 
-                value.push(u8::from_str_radix(&hex, 16).ok()? as char);
+                value.push(u8::from_str_radix(hex, 16).ok()? as char);
 
                 escaped = false
             }
@@ -167,7 +185,7 @@ fn comment<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
         && !lexer.remainder().is_empty()
         && ["=", "["].contains(&&lexer.remainder()[0..1])
     {
-        lexer.bump(lexer.remainder().find("[")? + 1);
+        lexer.bump(lexer.remainder().find('[')? + 1);
 
         return multi_line(lexer);
     }
@@ -196,7 +214,7 @@ fn comment<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
     // multi-line comment, so in this case it's a single line comment that happens to start with "["
     let remainder = lexer.remainder();
 
-    return match remainder.find("\n") {
+    return match remainder.find('\n') {
         None => {
             lexer.bump(remainder.len());
 
@@ -216,7 +234,7 @@ fn multi_line<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
     let slice = lexer.slice();
 
     // Ideally we could create a sub-lexer without this prefix in `comment`
-    let offset = 2 * slice.starts_with("-") as usize;
+    let offset = 2 * slice.starts_with('-') as usize;
 
     let len = slice.len();
 

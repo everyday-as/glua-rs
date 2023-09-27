@@ -40,12 +40,6 @@ impl Binary {
     }
 }
 
-impl Into<Exp> for Binary {
-    fn into(self) -> Exp {
-        Exp::Binary(self)
-    }
-}
-
 impl Display for BinOp {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(

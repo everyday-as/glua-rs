@@ -1,3 +1,6 @@
+/*#![feature(test)]
+extern crate test;*/
+
 pub use self::parser::Parser;
 
 pub mod ast;
@@ -8,6 +11,7 @@ pub mod parser;
 mod tests {
     use std::fs::File;
     use std::io::Write;
+    use test::bench::Bencher;
 
     use crate::lexer::lex;
     use crate::Parser;
@@ -28,4 +32,20 @@ mod tests {
 
         write!(File::create("test.parsed").unwrap(), "{:#?}", chunk).unwrap();
     }
+
+    /*    #[bench]
+    fn lexer(b: &mut Bencher) {
+        b.iter(|| lex(CODE).unwrap());
+    }
+
+    #[bench]
+    fn parser(b: &mut Bencher) {
+        b.iter(|| {
+            let tokens = lex(CODE).unwrap();
+
+            let mut parser = Parser::new(tokens);
+
+            parser.parse_chunk().unwrap()
+        });
+    }*/
 }

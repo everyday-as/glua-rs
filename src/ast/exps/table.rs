@@ -18,16 +18,10 @@ impl TableConstructor {
     }
 }
 
-impl Into<Exp> for TableConstructor {
-    fn into(self) -> Exp {
-        Exp::Table(self)
-    }
-}
-
 impl Field {
     pub fn new(key: Option<Node<Exp>>, value: Node<Exp>) -> Self {
         Self {
-            key: key.map(|key| Box::new(key)),
+            key: key.map(Box::new),
             value: Box::new(value),
         }
     }

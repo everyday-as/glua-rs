@@ -1,5 +1,6 @@
 use crate::ast::node::Node;
-use crate::ast::{Block, Exp, Stat};
+use crate::ast::Block;
+use crate::ast::Exp;
 
 #[derive(Clone, Debug)]
 pub struct RepeatUntil {
@@ -10,11 +11,5 @@ pub struct RepeatUntil {
 impl RepeatUntil {
     pub fn new(body: Block, cond: Node<Exp>) -> Self {
         Self { body, cond }
-    }
-}
-
-impl Into<Stat> for RepeatUntil {
-    fn into(self) -> Stat {
-        Stat::RepeatUntil(self)
     }
 }

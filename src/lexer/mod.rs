@@ -11,11 +11,11 @@ mod op;
 mod token;
 
 pub fn lex(input: &str) -> Result<Vec<(Token, Span)>, String> {
-    let mut lexer = Token::lexer(input).spanned();
+    let lexer = Token::lexer(input).spanned();
 
     let mut tokens = Vec::new();
 
-    while let Some((res, span)) = lexer.next() {
+    for (res, span) in lexer {
         let token = res.map_err(|_| format!("Unrecognised token at `{:?}` in input", span))?;
 
         tokens.push((token, span));

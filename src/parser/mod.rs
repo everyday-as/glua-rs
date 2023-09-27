@@ -1,11 +1,13 @@
-pub use logos::Span;
-use logos::{Lexer, Logos};
 use std::collections::VecDeque;
 use std::ops::Range;
+
+pub use logos::Span;
 
 use crate::ast::exps::*;
 use crate::ast::node::Node;
 use crate::ast::stats::*;
+use crate::ast::Exp;
+use crate::ast::Stat;
 use crate::ast::*;
 use crate::lexer::*;
 use crate::parser::parselets::nud::TableConstructorParselet;
@@ -52,7 +54,7 @@ impl<'source> Parser<'source> {
         // Rewind here, because Lua has SYNTACTICALLY ASCENDED THE MORTAL FUCKING PLANE
         while let Some(stat) = self.with_rewind(
             |p| p.parse_stat(),
-            |e| e == "Unexpected EOF" || e.ends_with("expected stat")
+            |e| e == "Unexpected EOF" || e.ends_with("expected stat"),
         )? {
             self.consume_a(Token::Semicolon);
 
@@ -73,14 +75,13 @@ impl<'source> Parser<'source> {
     }
 
     fn parse_stat_impl(&mut self) -> Result<Stat, String> {
-        let stat = match self.peek(0)? {
+        match self.peek(0)? {
             Token::Name(_) | Token::LParens => {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
                 match self
                     .with_rewind(
                         |parser| {
-                            let exp = parser.node(|p| p.parse_var())
-                                .map_err(|_| String::new())?;
+                            let exp = parser.node(|p| p.parse_var()).map_err(|_| String::new())?;
 
                             // Eq or Comma denotes an assignment expression
                             if parser.next_is_in(&[Token::Comma, Token::Op(Op::Eq)]) {
@@ -91,7 +92,7 @@ impl<'source> Parser<'source> {
                                 Err(String::new())
                             }
                         },
-                        |e| e.is_empty()
+                        |e| e.is_empty(),
                     )?
                     .clone()
                 {
@@ -312,19 +313,17 @@ impl<'source> Parser<'source> {
             }
 
             token => Err(format!("Unexpected `{:?}`, expected stat", token)),
-        };
-
-        stat
+        }
     }
 
     fn parse_last_stat(&mut self) -> Result<Stat, String> {
         let (token, _) = self.consume()?;
 
-        let stat = match token {
+        match token {
             Token::Keyword(Keyword::Return) => {
                 match self.with_rewind(
                     |parser| parser.parse_list(|p| p.parse_exp()),
-                    |e| e.ends_with("expected expression")
+                    |e| e.ends_with("expected expression"),
                 )? {
                     Some(exps) => Ok(Return::new(exps).into()),
                     None => Ok(Return::new(Vec::new()).into()),
@@ -340,9 +339,7 @@ impl<'source> Parser<'source> {
                 "Unexpected `{:?}`, expected return, continue or break",
                 token
             )),
-        };
-
-        stat
+        }
     }
 
     pub fn parse_exp(&mut self) -> Result<Node<Exp>, String> {
@@ -463,17 +460,17 @@ impl<'source> Parser<'source> {
         self.tokens
             .pop_front()
             .ok_or("Unexpected EOF".to_owned())
-            .and_then(|token| {
+            .map(|token| {
                 self.rewind_stack.push(token.clone());
                 self.last_span = token.1.clone();
 
-                Ok(token)
+                token
             })
     }
 
     fn expect<'a, E>(&mut self, expected: E) -> Result<(), String>
-        where
-            E: Into<Token<'a>>,
+    where
+        E: Into<Token<'a>>,
     {
         let (expected, (got, _)) = (expected.into(), self.consume()?);
 
@@ -485,8 +482,8 @@ impl<'source> Parser<'source> {
     }
 
     fn consume_a<'a, E>(&mut self, expected: E) -> bool
-        where
-            E: Into<Token<'a>>,
+    where
+        E: Into<Token<'a>>,
     {
         return if self.next_is(expected) {
             // If `next_is` returns `true` but `consume` fails something very, very bad has happened
@@ -499,8 +496,8 @@ impl<'source> Parser<'source> {
     }
 
     fn next_is<'a, E>(&mut self, expected: E) -> bool
-        where
-            E: Into<Token<'a>>,
+    where
+        E: Into<Token<'a>>,
     {
         match self.peek(0) {
             Ok(got) => got == expected.into(),
@@ -510,8 +507,8 @@ impl<'source> Parser<'source> {
     }
 
     fn next_is_in<'a, P>(&mut self, possibilities: &[P]) -> bool
-        where
-            P: Into<Token<'a>> + Clone,
+    where
+        P: Into<Token<'a>> + Clone,
     {
         for possibility in possibilities {
             if self.next_is(possibility.clone().into()) {
@@ -522,14 +519,10 @@ impl<'source> Parser<'source> {
         false
     }
 
-    fn with_rewind<T, F, C>(
-        &mut self,
-        func: F,
-        can_rewind: C
-    ) -> Result<Option<T>, String>
-        where
-            F: FnOnce(&mut Parser) -> Result<T, String>,
-            C: FnOnce(&str) -> bool,
+    fn with_rewind<T, F, C>(&mut self, func: F, can_rewind: C) -> Result<Option<T>, String>
+    where
+        F: FnOnce(&mut Parser) -> Result<T, String>,
+        C: FnOnce(&str) -> bool,
     {
         let rewind_to = self.rewind_stack.len();
 
@@ -545,7 +538,7 @@ impl<'source> Parser<'source> {
                 }
 
                 false => Err(err),
-            }
+            },
         }
     }
 
@@ -592,19 +585,14 @@ impl<'source> Parser<'source> {
 
                 let span = start..self.last_span.end;
 
-                Ok(vec![Node {
-                    span,
-                    inner,
-                }])
+                Ok(vec![Node { span, inner }])
             }
 
             // function"string"
-            Token::Literal(Literal::String(arg)) => {
-                Ok(vec![Node {
-                    span: self.last_span.clone(),
-                    inner: Exp::String(arg.into_owned()),
-                }])
-            }
+            Token::Literal(Literal::String(arg)) => Ok(vec![Node {
+                span: self.last_span.clone(),
+                inner: Exp::String(arg.into_owned()),
+            }]),
 
             token => Err(format!("Unexpected {:?}, expected args", token)),
         }
@@ -628,11 +616,11 @@ impl<'source> Parser<'source> {
         parse: P,
         is_end: IE,
     ) -> Result<Vec<T>, String>
-        where
-            T: 'source,
-            D: Into<Token<'source>>,
-            P: Fn(&mut Parser<'source>) -> Result<T, String>,
-            IE: Fn(Token) -> bool,
+    where
+        T: 'source,
+        D: Into<Token<'source>>,
+        P: Fn(&mut Parser<'source>) -> Result<T, String>,
+        IE: Fn(Token) -> bool,
     {
         let (mut items, delim) = (Vec::new(), delim.into());
 
@@ -648,8 +636,8 @@ impl<'source> Parser<'source> {
     }
 
     fn parse_list<T, P>(&mut self, parse: P) -> Result<Vec<T>, String>
-        where
-            P: Fn(&mut Parser<'source>) -> Result<T, String>,
+    where
+        P: Fn(&mut Parser<'source>) -> Result<T, String>,
     {
         let mut items = Vec::new();
 
