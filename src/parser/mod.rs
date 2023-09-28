@@ -19,7 +19,7 @@ pub type SpannedToken<'a> = (Token<'a>, Span);
 
 pub struct Parser<'source> {
     tokens: VecDeque<SpannedToken<'source>>,
-    rewind_stack: Vec<SpannedToken<'source>>,
+    pos: usize,
     last_span: Range<usize>,
 }
 
@@ -34,7 +34,7 @@ impl<'source> Parser<'source> {
                     token => Some((token, span)),
                 })
                 .collect(),
-            rewind_stack: Vec::new(),
+            pos: 0,
             last_span: 0..0,
         }
     }
@@ -42,7 +42,7 @@ impl<'source> Parser<'source> {
     pub fn parse_chunk(&mut self) -> Result<Block, String> {
         let block = self.parse_block()?;
 
-        match self.tokens.pop_front() {
+        match self.tokens.get(self.pos) {
             None => Ok(block),
             Some(token) => Err(format!("Unexpected {:?}, expected EOF", token)),
         }
@@ -449,7 +449,7 @@ impl<'source> Parser<'source> {
     }
 
     fn peek(&self, n: usize) -> Result<Token<'source>, String> {
-        match self.tokens.get(n) {
+        match self.tokens.get(self.pos + n) {
             Some((token, _)) => Ok(token.clone()),
 
             None => Err("Unexpected EOF".to_owned()),
@@ -458,10 +458,11 @@ impl<'source> Parser<'source> {
 
     fn consume(&mut self) -> Result<SpannedToken<'source>, String> {
         self.tokens
-            .pop_front()
+            .get(self.pos)
             .ok_or("Unexpected EOF".to_owned())
+            .cloned() // FIXME: copied
             .map(|token| {
-                self.rewind_stack.push(token.clone());
+                self.pos += 1;
                 self.last_span = token.1.clone();
 
                 token
@@ -524,15 +525,15 @@ impl<'source> Parser<'source> {
         F: FnOnce(&mut Parser) -> Result<T, String>,
         C: FnOnce(&str) -> bool,
     {
-        let rewind_to = self.rewind_stack.len();
+        let rewind_to = self.pos;
+        let last_span = self.last_span.clone();
 
         match func(self) {
             Ok(result) => Ok(Some(result)),
             Err(err) => match can_rewind(&err) {
                 true => {
-                    while self.rewind_stack.len() > rewind_to {
-                        self.tokens.push_front(self.rewind_stack.pop().unwrap());
-                    }
+                    self.pos = rewind_to;
+                    self.last_span = last_span;
 
                     Ok(None)
                 }
