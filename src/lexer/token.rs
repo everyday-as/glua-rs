@@ -131,7 +131,7 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
 
     let mut base = pad;
     for offset in memchr::memchr_iter(b'\\', slice) {
-        if offset <= base {
+        if offset < base {
             continue;
         }
 
@@ -210,11 +210,11 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
             }
 
             b'x' => {
-                let hex = std::str::from_utf8(slice.slice(offset + 1..offset + 3)?).ok()?;
+                let hex = std::str::from_utf8(slice.slice(offset + 2..offset + 4)?).ok()?;
 
                 value.push(u8::from_str_radix(hex, 16).ok()?);
 
-                base = offset + 3;
+                base = offset + 4;
             }
 
             _ => return None,

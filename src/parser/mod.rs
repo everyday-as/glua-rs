@@ -616,14 +616,14 @@ impl<'a> Parser<'a> {
         Node::map(node, |value| self.bump.alloc(value) as &_)
     }
 
-    fn span(&self) -> Result<'a, &Span> {
+    fn span(&self) -> Result<'a, &'a Span> {
         self.tokens
             .get(self.pos)
             .map(|(_, span)| span)
             .ok_or(Error::unexpected_eof(None))
     }
 
-    fn last_span(&self) -> Result<'a, &Span> {
+    fn last_span(&self) -> Result<'a, &'a Span> {
         self.tokens
             .get(self.pos.wrapping_sub(1))
             .map(|(_, span)| span)
