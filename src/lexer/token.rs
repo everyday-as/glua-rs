@@ -180,12 +180,11 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
                 base = offset + 2;
             }
 
-            b'\\' | b'"' | b'\'' |  b'\n' => {
+            b'\\' | b'"' | b'\'' | b'\n' => {
                 value.push(slice[offset + 1]);
 
                 base = offset + 2;
             }
-
 
             b'0'..=b'9' => {
                 let mut end = offset + 2;
