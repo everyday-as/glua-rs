@@ -92,12 +92,15 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_stat(&mut self) -> Result<'a, Stat<'a>> {
-        // We should only match `goto` as a potential expression if it's _not_ followed by a name,
-        // as that would make it a valid `goto` statement.
-        let name_after = matches!(self.peek(1), Ok(Token::Name(_)));
-
-        match (self.peek(0)?, name_after) {
-            (Token::Keyword(Keyword::Goto), false) | (Token::Name(_), _) | (Token::LParens, _) => {
+        match self.peek(0)? {
+            // We should only match `goto` as a potential expression if it's _not_ followed by a name,
+            // as that would make it a valid `goto` statement.
+            token @ Token::Keyword(Keyword::Goto)
+            | token @ Token::Name(_)
+            | token @ Token::LParens
+                if !matches!(token, Token::Keyword(Keyword::Goto))
+                    || !matches!(self.peek(1), Ok(Token::Name(_))) =>
+            {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
                 match self.with_rewind(|parser| {
                     let exp = parser.node(Self::parse_var).map_err(|_| Rewind::Rewind)?;
@@ -139,7 +142,7 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            (Token::Keyword(keyword), _) => {
+            Token::Keyword(keyword) => {
                 self.consume()?;
 
                 match keyword {
@@ -349,13 +352,13 @@ impl<'a> Parser<'a> {
                 }
             }
 
-            (Token::Label(name), _) => {
+            Token::Label(name) => {
                 self.consume()?;
 
                 Ok(Label::new(name).into())
             }
 
-            (token, _) => Err(Error::unexpected_token(
+            token => Err(Error::unexpected_token(
                 self.span()?,
                 Expectation::Stat,
                 *token,
