@@ -224,7 +224,7 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
 
     if base == pad {
         return Some(&lexer.slice()[pad..slice.len() - pad]);
-    } else {
+    } else if base < slice.len() - pad {
         value.extend_from_slice(&slice[base..slice.len() - pad])
     }
 
