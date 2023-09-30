@@ -1,13 +1,12 @@
-use crate::ast::node::Node;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Exp};
 
-#[derive(Clone, Debug)]
-pub struct Return {
-    pub exps: Vec<Node<Exp>>,
+#[derive(Clone, Copy, Debug)]
+pub struct Return<'a> {
+    pub exps: &'a [Node<&'a Exp<'a>>],
 }
 
-impl Return {
-    pub fn new(exps: Vec<Node<Exp>>) -> Self {
+impl<'a> Return<'a> {
+    pub fn new(exps: &'a [Node<&'a Exp>]) -> Self {
         Self { exps }
     }
 }

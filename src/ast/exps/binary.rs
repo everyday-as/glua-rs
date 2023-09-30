@@ -1,14 +1,15 @@
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt,
+    fmt::{Display, Formatter},
+};
 
-use crate::ast::node::Node;
-use crate::ast::Exp;
-use std::fmt;
+use crate::ast::{node::Node, Exp};
 
-#[derive(Clone, Debug)]
-pub struct Binary {
-    pub lhs: Box<Node<Exp>>,
+#[derive(Clone, Copy, Debug)]
+pub struct Binary<'a> {
+    pub lhs: Node<&'a Exp<'a>>,
     pub op: BinOp,
-    pub rhs: Box<Node<Exp>>,
+    pub rhs: Node<&'a Exp<'a>>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -30,13 +31,9 @@ pub enum BinOp {
     Sub,
 }
 
-impl Binary {
-    pub fn new(lhs: Node<Exp>, op: BinOp, rhs: Node<Exp>) -> Self {
-        Self {
-            lhs: Box::new(lhs),
-            op,
-            rhs: Box::new(rhs),
-        }
+impl<'a> Binary<'a> {
+    pub fn new(lhs: Node<&'a Exp>, op: BinOp, rhs: Node<&'a Exp>) -> Self {
+        Self { lhs, op, rhs }
     }
 }
 

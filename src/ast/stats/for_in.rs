@@ -1,16 +1,14 @@
-use crate::ast::node::Node;
-use crate::ast::Block;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Block, Exp};
 
-#[derive(Clone, Debug)]
-pub struct ForIn {
-    pub names: Vec<String>,
-    pub exps: Vec<Node<Exp>>,
-    pub body: Block,
+#[derive(Clone, Copy, Debug)]
+pub struct ForIn<'a> {
+    pub names: &'a [&'a str],
+    pub exps: &'a [Node<&'a Exp<'a>>],
+    pub body: Block<'a>,
 }
 
-impl ForIn {
-    pub fn new(names: Vec<String>, exps: Vec<Node<Exp>>, body: Block) -> Self {
+impl<'a> ForIn<'a> {
+    pub fn new(names: &'a [&'a str], exps: &'a [Node<&'a Exp>], body: Block<'a>) -> Self {
         Self { names, exps, body }
     }
 }

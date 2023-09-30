@@ -2,80 +2,80 @@ use crate::ast::exps::{
     Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary,
 };
 
-#[derive(Clone, Debug)]
-pub enum Exp {
-    Binary(Binary),
+#[derive(Clone, Copy, Debug)]
+pub enum Exp<'a> {
+    Binary(Binary<'a>),
     Bool(bool),
-    Function(Function),
-    FunctionCall(FunctionCall),
-    Index(Index),
-    Member(Member),
-    MethodCall(MethodCall),
+    Function(Function<'a>),
+    FunctionCall(FunctionCall<'a>),
+    Index(Index<'a>),
+    Member(Member<'a>),
+    MethodCall(MethodCall<'a>),
     Nil,
     Number(f64),
-    Ref(String),
-    String(String),
-    Table(TableConstructor),
-    Unary(Unary),
+    Ref(&'a str),
+    String(&'a str),
+    Table(TableConstructor<'a>),
+    Unary(Unary<'a>),
     VarArgs,
 }
 
-impl From<Binary> for Exp {
-    fn from(value: Binary) -> Self {
+impl<'a> From<Binary<'a>> for Exp<'a> {
+    fn from(value: Binary<'a>) -> Self {
         Self::Binary(value)
     }
 }
 
-impl From<bool> for Exp {
+impl From<bool> for Exp<'_> {
     fn from(value: bool) -> Self {
         Self::Bool(value)
     }
 }
 
-impl From<Function> for Exp {
-    fn from(value: Function) -> Self {
+impl<'a> From<Function<'a>> for Exp<'a> {
+    fn from(value: Function<'a>) -> Self {
         Self::Function(value)
     }
 }
 
-impl From<FunctionCall> for Exp {
-    fn from(value: FunctionCall) -> Self {
+impl<'a> From<FunctionCall<'a>> for Exp<'a> {
+    fn from(value: FunctionCall<'a>) -> Self {
         Self::FunctionCall(value)
     }
 }
 
-impl From<Index> for Exp {
-    fn from(value: Index) -> Self {
+impl<'a> From<Index<'a>> for Exp<'a> {
+    fn from(value: Index<'a>) -> Self {
         Self::Index(value)
     }
 }
 
-impl From<Member> for Exp {
-    fn from(value: Member) -> Self {
+impl<'a> From<Member<'a>> for Exp<'a> {
+    fn from(value: Member<'a>) -> Self {
         Self::Member(value)
     }
 }
 
-impl From<MethodCall> for Exp {
-    fn from(value: MethodCall) -> Self {
+impl<'a> From<MethodCall<'a>> for Exp<'a> {
+    fn from(value: MethodCall<'a>) -> Self {
         Self::MethodCall(value)
     }
 }
 
-impl From<f64> for Exp {
+impl From<f64> for Exp<'_> {
     fn from(value: f64) -> Self {
         Self::Number(value)
     }
 }
 
-impl From<TableConstructor> for Exp {
-    fn from(value: TableConstructor) -> Self {
+impl<'a> From<TableConstructor<'a>> for Exp<'a> {
+    fn from(value: TableConstructor<'a>) -> Self {
         Self::Table(value)
     }
 }
 
-impl From<Unary> for Exp {
-    fn from(value: Unary) -> Self {
+impl<'a> From<Unary<'a>> for Exp<'a> {
+    fn from(value: Unary<'a>) -> Self {
         Self::Unary(value)
     }
 }

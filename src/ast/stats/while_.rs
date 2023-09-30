@@ -1,15 +1,13 @@
-use crate::ast::node::Node;
-use crate::ast::Block;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Block, Exp};
 
-#[derive(Clone, Debug)]
-pub struct While {
-    pub body: Block,
-    pub cond: Node<Exp>,
+#[derive(Clone, Copy, Debug)]
+pub struct While<'a> {
+    pub body: Block<'a>,
+    pub cond: Node<&'a Exp<'a>>,
 }
 
-impl While {
-    pub fn new(cond: Node<Exp>, body: Block) -> Self {
+impl<'a> While<'a> {
+    pub fn new(cond: Node<&'a Exp>, body: Block<'a>) -> Self {
         Self { body, cond }
     }
 }

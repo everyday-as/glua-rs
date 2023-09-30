@@ -1,12 +1,13 @@
-use glua::lexer::lex;
-use glua::Parser;
 use std::hint::black_box;
 
-fn main() {
-    for _ in 0..256 {
-        let tokens = lex(include_str!("../test.lua")).unwrap();
+use bumpalo::Bump;
+use glua::Parser;
 
-        let mut parser = Parser::new(tokens);
+fn main() {
+    for _ in 0..8192 {
+        let bump = Bump::new();
+
+        let mut parser = Parser::try_from_str_in(include_str!("../test2.lua"), &bump).unwrap();
 
         black_box(parser.parse_chunk().unwrap());
     }

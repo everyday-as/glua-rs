@@ -1,10 +1,10 @@
-#[derive(Clone, Debug)]
-pub struct Goto {
-    pub label: String,
+#[derive(Clone, Copy, Debug)]
+pub struct Goto<'a> {
+    pub label: &'a str,
 }
 
-impl Goto {
-    pub fn new(label: String) -> Self {
+impl<'a> Goto<'a> {
+    pub fn new(label: &'a str) -> Self {
         Self { label }
     }
 }

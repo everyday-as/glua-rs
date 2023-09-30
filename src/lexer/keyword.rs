@@ -1,4 +1,6 @@
-#[derive(Clone, Debug, PartialEq)]
+use crate::lexer::Token;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Keyword {
     Break,
     Do,
@@ -18,4 +20,13 @@ pub enum Keyword {
     // GMod specific
     Continue,
     Goto,
+}
+
+impl PartialEq<Token<'_>> for Keyword {
+    fn eq(&self, other: &Token) -> bool {
+        match other {
+            Token::Keyword(keyword) => self.eq(keyword),
+            _ => false,
+        }
+    }
 }

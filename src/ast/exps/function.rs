@@ -1,13 +1,13 @@
 use crate::ast::Block;
 
-#[derive(Clone, Debug)]
-pub struct Function {
-    pub params: Vec<String>,
-    pub body: Block,
+#[derive(Clone, Copy, Debug)]
+pub struct Function<'a> {
+    pub params: &'a [&'a str],
+    pub body: Block<'a>,
 }
 
-impl Function {
-    pub fn new(params: Vec<String>, body: Block) -> Self {
+impl<'a> Function<'a> {
+    pub fn new(params: &'a [&'a str], body: Block<'a>) -> Self {
         Self { params, body }
     }
 }

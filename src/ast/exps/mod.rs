@@ -1,11 +1,7 @@
-pub use self::binary::Binary;
-pub use self::function::Function;
-pub use self::function_call::FunctionCall;
-pub use self::index::Index;
-pub use self::member::Member;
-pub use self::method_call::MethodCall;
-pub use self::table::TableConstructor;
-pub use self::unary::Unary;
+pub use self::{
+    binary::Binary, function::Function, function_call::FunctionCall, index::Index, member::Member,
+    method_call::MethodCall, table::TableConstructor, unary::Unary,
+};
 
 pub mod binary;
 mod function;

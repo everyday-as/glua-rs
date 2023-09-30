@@ -1,113 +1,115 @@
-use crate::ast::exps::{FunctionCall, MethodCall};
-use crate::ast::stats::{
-    Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, Label, RepeatUntil, Return, VarDef,
-    While,
+use crate::ast::{
+    exps::{FunctionCall, MethodCall},
+    stats::{
+        Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, Label, RepeatUntil, Return, VarDef,
+        While,
+    },
 };
 
 #[derive(Clone, Debug)]
-pub enum Stat {
-    Assignment(Assignment),
+pub enum Stat<'a> {
+    Assignment(Assignment<'a>),
     Break,
     /// GMod specific continue statement
     Continue,
-    Do(Do),
-    For(For),
-    ForIn(ForIn),
-    FunctionCall(FunctionCall),
-    FunctionDef(FunctionDef),
+    Do(Do<'a>),
+    For(For<'a>),
+    ForIn(ForIn<'a>),
+    FunctionCall(FunctionCall<'a>),
+    FunctionDef(FunctionDef<'a>),
     // GMod specific goto statement
-    Goto(Goto),
-    IfElse(IfElse),
+    Goto(Goto<'a>),
+    IfElse(IfElse<'a>),
     // GMod specific label statement
-    Label(Label),
-    MethodCall(MethodCall),
+    Label(Label<'a>),
+    MethodCall(MethodCall<'a>),
     None,
-    RepeatUntil(RepeatUntil),
-    Return(Return),
-    VarDef(VarDef),
-    While(While),
+    RepeatUntil(RepeatUntil<'a>),
+    Return(Return<'a>),
+    VarDef(VarDef<'a>),
+    While(While<'a>),
 }
 
-impl From<Assignment> for Stat {
-    fn from(value: Assignment) -> Self {
+impl<'a> From<Assignment<'a>> for Stat<'a> {
+    fn from(value: Assignment<'a>) -> Self {
         Self::Assignment(value)
     }
 }
 
-impl From<Do> for Stat {
-    fn from(value: Do) -> Self {
+impl<'a> From<Do<'a>> for Stat<'a> {
+    fn from(value: Do<'a>) -> Self {
         Self::Do(value)
     }
 }
 
-impl From<For> for Stat {
-    fn from(value: For) -> Self {
+impl<'a> From<For<'a>> for Stat<'a> {
+    fn from(value: For<'a>) -> Self {
         Self::For(value)
     }
 }
 
-impl From<ForIn> for Stat {
-    fn from(value: ForIn) -> Self {
+impl<'a> From<ForIn<'a>> for Stat<'a> {
+    fn from(value: ForIn<'a>) -> Self {
         Self::ForIn(value)
     }
 }
 
-impl From<FunctionCall> for Stat {
-    fn from(value: FunctionCall) -> Self {
+impl<'a> From<FunctionCall<'a>> for Stat<'a> {
+    fn from(value: FunctionCall<'a>) -> Self {
         Self::FunctionCall(value)
     }
 }
 
-impl From<FunctionDef> for Stat {
-    fn from(value: FunctionDef) -> Self {
+impl<'a> From<FunctionDef<'a>> for Stat<'a> {
+    fn from(value: FunctionDef<'a>) -> Self {
         Self::FunctionDef(value)
     }
 }
 
-impl From<Goto> for Stat {
-    fn from(value: Goto) -> Self {
+impl<'a> From<Goto<'a>> for Stat<'a> {
+    fn from(value: Goto<'a>) -> Self {
         Self::Goto(value)
     }
 }
 
-impl From<IfElse> for Stat {
-    fn from(value: IfElse) -> Self {
+impl<'a> From<IfElse<'a>> for Stat<'a> {
+    fn from(value: IfElse<'a>) -> Self {
         Self::IfElse(value)
     }
 }
 
-impl From<Label> for Stat {
-    fn from(value: Label) -> Self {
+impl<'a> From<Label<'a>> for Stat<'a> {
+    fn from(value: Label<'a>) -> Self {
         Self::Label(value)
     }
 }
 
-impl From<MethodCall> for Stat {
-    fn from(value: MethodCall) -> Self {
+impl<'a> From<MethodCall<'a>> for Stat<'a> {
+    fn from(value: MethodCall<'a>) -> Self {
         Self::MethodCall(value)
     }
 }
 
-impl From<RepeatUntil> for Stat {
-    fn from(value: RepeatUntil) -> Self {
+impl<'a> From<RepeatUntil<'a>> for Stat<'a> {
+    fn from(value: RepeatUntil<'a>) -> Self {
         Self::RepeatUntil(value)
     }
 }
 
-impl From<Return> for Stat {
-    fn from(value: Return) -> Self {
+impl<'a> From<Return<'a>> for Stat<'a> {
+    fn from(value: Return<'a>) -> Self {
         Self::Return(value)
     }
 }
 
-impl From<VarDef> for Stat {
-    fn from(value: VarDef) -> Self {
+impl<'a> From<VarDef<'a>> for Stat<'a> {
+    fn from(value: VarDef<'a>) -> Self {
         Self::VarDef(value)
     }
 }
 
-impl From<While> for Stat {
-    fn from(value: While) -> Self {
+impl<'a> From<While<'a>> for Stat<'a> {
+    fn from(value: While<'a>) -> Self {
         Self::While(value)
     }
 }

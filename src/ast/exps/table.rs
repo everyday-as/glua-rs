@@ -1,28 +1,24 @@
-use crate::ast::node::Node;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Exp};
 
-#[derive(Clone, Debug)]
-pub struct TableConstructor {
-    pub fields: Vec<Field>,
+#[derive(Clone, Copy, Debug)]
+pub struct TableConstructor<'a> {
+    pub fields: &'a [Field<'a>],
 }
 
-#[derive(Clone, Debug)]
-pub struct Field {
-    pub key: Option<Box<Node<Exp>>>,
-    pub value: Box<Node<Exp>>,
+#[derive(Clone, Copy, Debug)]
+pub struct Field<'a> {
+    pub key: Option<Node<&'a Exp<'a>>>,
+    pub value: Node<&'a Exp<'a>>,
 }
 
-impl TableConstructor {
-    pub fn new(fields: Vec<Field>) -> Self {
+impl<'a> TableConstructor<'a> {
+    pub fn new(fields: &'a [Field]) -> Self {
         Self { fields }
     }
 }
 
-impl Field {
-    pub fn new(key: Option<Node<Exp>>, value: Node<Exp>) -> Self {
-        Self {
-            key: key.map(Box::new),
-            value: Box::new(value),
-        }
+impl<'a> Field<'a> {
+    pub fn new(key: Option<Node<&'a Exp>>, value: Node<&'a Exp>) -> Self {
+        Self { key, value }
     }
 }

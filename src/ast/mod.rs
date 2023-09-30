@@ -10,4 +10,4 @@ mod stat;
 pub mod stats;
 pub mod visitors;
 
-pub type Block = Vec<Node<Stat>>;
+pub type Block<'a> = &'a [Node<&'a Stat<'a>>];

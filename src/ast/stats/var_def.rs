@@ -1,14 +1,13 @@
-use crate::ast::node::Node;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Exp};
 
-#[derive(Clone, Debug)]
-pub struct VarDef {
-    pub names: Vec<String>,
-    pub init_exps: Option<Vec<Node<Exp>>>,
+#[derive(Clone, Copy, Debug)]
+pub struct VarDef<'a> {
+    pub names: &'a [&'a str],
+    pub init_exps: Option<&'a [Node<&'a Exp<'a>>]>,
 }
 
-impl VarDef {
-    pub fn new(names: Vec<String>, init_exps: Option<Vec<Node<Exp>>>) -> Self {
+impl<'a> VarDef<'a> {
+    pub fn new(names: &'a [&'a str], init_exps: Option<&'a [Node<&'a Exp>]>) -> Self {
         Self { names, init_exps }
     }
 }

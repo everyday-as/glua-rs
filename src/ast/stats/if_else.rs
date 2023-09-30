@@ -1,21 +1,19 @@
-use crate::ast::node::Node;
-use crate::ast::Block;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Block, Exp};
 
-#[derive(Clone, Debug)]
-pub struct IfElse {
-    pub cond: Node<Exp>,
-    pub body: Block,
-    pub else_ifs: Vec<(Node<Exp>, Block)>,
-    pub else_block: Option<Block>,
+#[derive(Clone, Copy, Debug)]
+pub struct IfElse<'a> {
+    pub cond: Node<&'a Exp<'a>>,
+    pub body: Block<'a>,
+    pub else_ifs: &'a [(Node<&'a Exp<'a>>, Block<'a>)],
+    pub else_block: Option<Block<'a>>,
 }
 
-impl IfElse {
+impl<'a> IfElse<'a> {
     pub fn new(
-        cond: Node<Exp>,
-        body: Block,
-        else_ifs: Vec<(Node<Exp>, Block)>,
-        else_block: Option<Block>,
+        cond: Node<&'a Exp>,
+        body: Block<'a>,
+        else_ifs: &'a [(Node<&'a Exp>, Block<'a>)],
+        else_block: Option<Block<'a>>,
     ) -> Self {
         Self {
             cond,

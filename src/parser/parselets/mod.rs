@@ -1,18 +1,24 @@
-use crate::ast::node::Node;
-use crate::ast::Exp;
-use crate::lexer::Token;
-use crate::parser::{Parser, Precedence};
+use crate::{
+    ast::{node::Node, Exp},
+    lexer::Token,
+    parser::{Parser, Precedence, Result},
+};
 
 pub mod led;
 pub mod nud;
 
 // Null-denotation rule
 pub trait Nud {
-    fn parse(&self, parser: &mut Parser, token: Token) -> Result<Exp, String>;
+    fn parse<'a>(&self, parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>>;
 }
 
 // Left-denotation rule
 pub trait Led {
-    fn parse(&self, parser: &mut Parser, lhs: Node<Exp>, token: Token) -> Result<Exp, String>;
+    fn parse<'a>(
+        &self,
+        parser: &mut Parser<'a>,
+        lhs: Node<&'a Exp>,
+        token: Token<'a>,
+    ) -> Result<'a, Exp<'a>>;
     fn get_precedence(&self) -> Precedence;
 }

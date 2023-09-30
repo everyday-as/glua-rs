@@ -1,15 +1,14 @@
-use crate::ast::exps::Function;
-use crate::ast::node::Node;
+use crate::ast::{exps::Function, node::Node};
 
-#[derive(Clone, Debug)]
-pub struct FunctionDef {
+#[derive(Clone, Copy, Debug)]
+pub struct FunctionDef<'a> {
     pub local: bool,
-    pub name: String,
-    pub body: Node<Function>,
+    pub name: &'a str,
+    pub body: Node<&'a Function<'a>>,
 }
 
-impl FunctionDef {
-    pub fn new(local: bool, name: String, body: Node<Function>) -> Self {
+impl<'a> FunctionDef<'a> {
+    pub fn new(local: bool, name: &'a str, body: Node<&'a Function>) -> Self {
         Self { local, name, body }
     }
 }

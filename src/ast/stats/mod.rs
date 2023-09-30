@@ -1,15 +1,8 @@
-pub use self::assignment::Assignment;
-pub use self::do_::Do;
-pub use self::for_::For;
-pub use self::for_in::ForIn;
-pub use self::function_def::FunctionDef;
-pub use self::goto::Goto;
-pub use self::if_else::IfElse;
-pub use self::label::Label;
-pub use self::repeat_until::RepeatUntil;
-pub use self::return_::Return;
-pub use self::var_def::VarDef;
-pub use self::while_::While;
+pub use self::{
+    assignment::Assignment, do_::Do, for_::For, for_in::ForIn, function_def::FunctionDef,
+    goto::Goto, if_else::IfElse, label::Label, repeat_until::RepeatUntil, return_::Return,
+    var_def::VarDef, while_::While,
+};
 
 mod assignment;
 mod do_;

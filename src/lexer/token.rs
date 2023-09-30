@@ -1,10 +1,14 @@
+use bumpalo::{
+    collections::{String as BumpString, Vec},
+    Bump,
+};
+use logos::{Lexer, Logos, Source};
+use memchr::memmem;
+
 use crate::lexer::{Keyword, Literal, Op};
-use std::borrow::Cow;
 
-use logos::{Lexer, Logos};
-
-#[derive(Clone, Debug, Logos, PartialEq)]
-#[logos(skip r"[ \t\r\n\f\x{FEFF}]+")]
+#[derive(Clone, Copy, Debug, Logos, PartialEq)]
+#[logos(skip r"[ \t\r\n\f\x{FEFF}]+", extras = & 's Bump)]
 pub enum Token<'a> {
     #[token(",")]
     Comma,
@@ -50,9 +54,9 @@ pub enum Token<'a> {
     .map(Literal::Number)
     .ok()
     })]
-    #[regex(r#""([^"\\\n]|\\.)*""#, string_literal)]
-    #[regex(r"'([^'\\\n]|\\.)*'", string_literal)]
-    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(Cow::Borrowed).map(Literal::String))]
+    #[regex(r#""([^"\\\n]|\\.)*""#, | lex | string_literal(lex).map(Literal::String))]
+    #[regex(r"'([^'\\\n]|\\.)*'", | lex | string_literal(lex).map(Literal::String))]
+    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(Literal::String))]
     Literal(Literal<'a>),
     #[token("(")]
     LParens,
@@ -62,7 +66,7 @@ pub enum Token<'a> {
     | lex | lex.slice()
     )]
     Name(&'a str),
-    #[regex(r"::[a-zA-Z_0-9]+::", | lex | &lex.slice()[2..lex.slice().len() - 2])]
+    #[regex(r"::[a-zA-Z_0-9]+::", | lex | & lex.slice()[2..lex.slice().len() - 2])]
     Label(&'a str),
     #[token("+", | _ | Op::Add)]
     #[token("and", | _ | Op::And)]
@@ -118,83 +122,91 @@ impl From<Op> for Token<'_> {
     }
 }
 
-fn string_literal<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<Literal<'a>> {
-    let slice = lexer.slice();
+fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
+    let slice = lexer.slice().as_bytes();
 
-    let pad = match slice.chars().next().unwrap() {
-        '[' => 2,
-        _ => 1,
-    };
+    let pad = slice.starts_with(b"[") as usize + 1;
 
-    let mut value = String::with_capacity(slice.len() - (2 * pad));
+    let mut value = Vec::new_in(lexer.extras);
 
-    let mut escaped = false;
+    let mut base = pad;
+    for offset in memchr::memchr_iter(b'\\', slice) {
+        if offset <= base {
+            continue;
+        }
 
-    let mut chars = slice[pad..slice.len() - pad].chars().peekable();
+        value.extend_from_slice(&slice[base..offset]);
 
-    while let Some(ch) = chars.next() {
-        match ch {
-            '\\' if !escaped => escaped = true,
+        match slice[offset + 1] {
+            b'\\' => {
+                value.push(b'\\');
 
-            '0'..='9' if escaped => {
-                let mut n_str = String::with_capacity(3);
+                base = offset + 2;
+            }
 
-                n_str.push(ch);
+            b'0'..=b'9' => {
+                let mut end = offset + 2;
 
                 for _ in 0..2 {
-                    if let Some('0'..='9') = chars.peek() {
-                        n_str.push(chars.next().unwrap());
+                    if let Some(b'0'..=b'9') = slice.get(end) {
+                        end += 1;
                     }
                 }
 
-                let num: usize = n_str.parse().unwrap();
+                let n: u16 = std::str::from_utf8(&slice[offset + 1..end])
+                    .ok()?
+                    .parse()
+                    .unwrap();
 
-                if num > 255 {
+                if n > 255 {
                     return None;
                 }
 
-                value.push((num as u8) as char);
+                value.push(n as u8);
 
-                escaped = false
+                base = end
             }
 
-            'x' if escaped => {
-                let hex_bytes = [chars.next()? as u8, chars.next()? as u8];
+            b'x' => {
+                let hex = std::str::from_utf8(slice.slice(offset + 1..offset + 3)?).ok()?;
 
-                let hex = ::std::str::from_utf8(&hex_bytes).ok()?;
+                value.push(u8::from_str_radix(hex, 16).ok()?);
 
-                value.push(u8::from_str_radix(hex, 16).ok()? as char);
-
-                escaped = false
+                base = offset + 3;
             }
 
-            _ => {
-                value.push(ch);
-
-                escaped = false
-            }
+            _ => return None,
         }
     }
 
-    Some(Literal::String(Cow::Owned(value)))
+    if base == pad {
+        return Some(&lexer.slice()[pad..slice.len() - pad]);
+    } else {
+        value.extend_from_slice(&slice[base..slice.len() - pad])
+    }
+
+    let string = BumpString::from_utf8(value).ok()?;
+
+    Some(string.into_bump_str())
 }
 
 fn comment<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
     // Multi-line comment
-    if lexer.slice().len() == 3
-        && !lexer.remainder().is_empty()
-        && ["=", "["].contains(&&lexer.remainder()[0..1])
-    {
-        lexer.bump(lexer.remainder().find('[')? + 1);
+    // `slice` may be "--[": https://github.com/maciejhirsz/logos/issues/315#issuecomment-1714257180
+    // We cannot conditionally match [=*[ because it generates false matches, so we match the prefix
+    // --[ which may or may not be a multi-line comment. We will first attempt match a multi-line
+    // comment, or fallthrough if it's a single line comment that happens to start with "["
+    if lexer.slice().len() == 3 && lexer.remainder().starts_with(['=', '[']) {
+        let offset = memchr::memchr(b'[', lexer.remainder().as_bytes())?;
+
+        lexer.bump(offset + 1);
 
         return multi_line(lexer);
     }
 
-    let slice = lexer.slice();
-
     // C-Style multi-line comment
-    if slice == "/*" {
-        return match lexer.remainder().find("*/") {
+    if lexer.slice() == "/*" {
+        return match memmem::find(lexer.remainder().as_bytes(), b"*/") {
             None => {
                 lexer.bump(lexer.remainder().len());
 
@@ -208,18 +220,14 @@ fn comment<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
         };
     }
 
-    // `slice` may be "--[": https://github.com/maciejhirsz/logos/issues/315#issuecomment-1714257180
-    // We cannot conditionally match [=*[ because it generates false matches, so we match the prefix
-    // --[ which may or may not be a multi-line comment. By this point, we have attempted to match a
-    // multi-line comment, so in this case it's a single line comment that happens to start with "["
     let remainder = lexer.remainder();
-
-    return match remainder.find('\n') {
+    return match memchr::memchr(b'\n', remainder.as_bytes()) {
         None => {
             lexer.bump(remainder.len());
 
             Some(remainder)
         }
+
         Some(offset) => {
             lexer.bump(offset);
 
@@ -250,9 +258,7 @@ fn multi_line<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {
         buf
     };
 
-    lexer
-        .remainder()
-        .find(&closing)
+    memmem::find(lexer.remainder().as_bytes(), closing.as_bytes())
         .map(|i| lexer.bump(i + closing.len()))
         .map(|_| &lexer.slice()[len..lexer.slice().len() - closing.len()])
 }

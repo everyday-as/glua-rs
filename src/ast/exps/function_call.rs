@@ -1,17 +1,13 @@
-use crate::ast::node::Node;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Exp};
 
-#[derive(Clone, Debug)]
-pub struct FunctionCall {
-    pub lhs: Box<Node<Exp>>,
-    pub args: Vec<Node<Exp>>,
+#[derive(Clone, Copy, Debug)]
+pub struct FunctionCall<'a> {
+    pub lhs: Node<&'a Exp<'a>>,
+    pub args: &'a [Node<&'a Exp<'a>>],
 }
 
-impl FunctionCall {
-    pub fn new(lhs: Node<Exp>, args: Vec<Node<Exp>>) -> Self {
-        Self {
-            lhs: Box::new(lhs),
-            args,
-        }
+impl<'a> FunctionCall<'a> {
+    pub fn new(lhs: Node<&'a Exp>, args: &'a [Node<&'a Exp>]) -> Self {
+        Self { lhs, args }
     }
 }

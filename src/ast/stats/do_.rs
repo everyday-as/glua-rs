@@ -1,12 +1,12 @@
 use crate::ast::Block;
 
-#[derive(Clone, Debug)]
-pub struct Do {
-    pub body: Block,
+#[derive(Clone, Copy, Debug)]
+pub struct Do<'a> {
+    pub body: Block<'a>,
 }
 
-impl Do {
-    pub fn new(body: Block) -> Self {
+impl<'a> Do<'a> {
+    pub fn new(body: Block<'a>) -> Self {
         Self { body }
     }
 }

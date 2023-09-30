@@ -1,21 +1,19 @@
-use crate::ast::node::Node;
-use crate::ast::Block;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Block, Exp};
 
-#[derive(Clone, Debug)]
-pub struct For {
-    pub init: (String, Node<Exp>),
-    pub test: Node<Exp>,
-    pub update: Option<Node<Exp>>,
-    pub body: Block,
+#[derive(Clone, Copy, Debug)]
+pub struct For<'a> {
+    pub init: (&'a str, Node<&'a Exp<'a>>),
+    pub test: Node<&'a Exp<'a>>,
+    pub update: Option<Node<&'a Exp<'a>>>,
+    pub body: Block<'a>,
 }
 
-impl For {
+impl<'a> For<'a> {
     pub fn new(
-        init: (String, Node<Exp>),
-        test: Node<Exp>,
-        update: Option<Node<Exp>>,
-        body: Block,
+        init: (&'a str, Node<&'a Exp>),
+        test: Node<&'a Exp>,
+        update: Option<Node<&'a Exp>>,
+        body: Block<'a>,
     ) -> Self {
         Self {
             init,

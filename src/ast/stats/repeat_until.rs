@@ -1,15 +1,13 @@
-use crate::ast::node::Node;
-use crate::ast::Block;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Block, Exp};
 
-#[derive(Clone, Debug)]
-pub struct RepeatUntil {
-    pub body: Block,
-    pub cond: Node<Exp>,
+#[derive(Clone, Copy, Debug)]
+pub struct RepeatUntil<'a> {
+    pub body: Block<'a>,
+    pub cond: Node<&'a Exp<'a>>,
 }
 
-impl RepeatUntil {
-    pub fn new(body: Block, cond: Node<Exp>) -> Self {
+impl<'a> RepeatUntil<'a> {
+    pub fn new(body: Block<'a>, cond: Node<&'a Exp>) -> Self {
         Self { body, cond }
     }
 }

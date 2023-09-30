@@ -1,4 +1,6 @@
-#[derive(Clone, Debug, PartialEq)]
+use crate::lexer::Token;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Op {
     Add,
     And,
@@ -20,4 +22,13 @@ pub enum Op {
     Or,
     Not,
     Sub,
+}
+
+impl PartialEq<Token<'_>> for Op {
+    fn eq(&self, other: &Token) -> bool {
+        match other {
+            Token::Op(op) => self.eq(op),
+            _ => false,
+        }
+    }
 }

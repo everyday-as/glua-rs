@@ -1,28 +1,26 @@
-use std::fmt;
-use std::fmt::{Display, Formatter};
+use std::{
+    fmt,
+    fmt::{Display, Formatter},
+};
 
-use crate::ast::node::Node;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Exp};
 
-#[derive(Clone, Debug)]
-pub struct Unary {
+#[derive(Clone, Copy, Debug)]
+pub struct Unary<'a> {
     pub op: UnOp,
-    pub exp: Box<Node<Exp>>,
+    pub exp: Node<&'a Exp<'a>>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum UnOp {
     Neg,
     Not,
     Len,
 }
 
-impl Unary {
-    pub fn new(op: UnOp, exp: Node<Exp>) -> Self {
-        Self {
-            op,
-            exp: Box::new(exp),
-        }
+impl<'a> Unary<'a> {
+    pub fn new(op: UnOp, exp: Node<&'a Exp>) -> Self {
+        Self { op, exp }
     }
 }
 

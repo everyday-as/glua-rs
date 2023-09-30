@@ -1,51 +1,67 @@
-use crate::ast::exps::Member;
-use crate::ast::visitors::renderer::Renderer;
-use crate::ast::visitors::{walk_exp, Visitor};
-use crate::ast::Exp;
-use logos::Span;
 use std::ops::Deref;
 
-#[derive(Clone, Debug)]
+use logos::Span;
+
+use crate::ast::{
+    exps::Member,
+    visitors::{renderer::Renderer, walk_exp, Visitor},
+    Exp,
+};
+
+#[derive(Clone, Copy, Debug)]
 pub struct Node<T> {
-    pub span: Span,
-    pub inner: T,
+    span: (usize, usize),
+    inner: T,
 }
 
-impl<T> Node<T> {
-    pub fn span(this: &Self) -> Span {
-        this.span.clone()
-    }
+// impl<T> Copy for Node<T> where T: Copy {}
 
-    pub fn morph<U>(this: &Self, inner: U) -> Node<U> {
-        Node {
-            span: this.span.clone(),
+impl<T> Node<T> {
+    pub fn new(span: Span, inner: T) -> Self {
+        Self {
+            span: (span.start, span.end),
             inner,
         }
     }
 
-    pub fn as_ref(this: &Self) -> Node<&T> {
+    pub fn span(&self) -> Span {
+        self.span.0..self.span.1
+    }
+
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
+
+    pub fn map<U>(this: Self, cb: impl FnOnce(T) -> U) -> Node<U> {
         Node {
-            span: this.span.clone(),
-            inner: &this.inner,
+            span: this.span,
+            inner: cb(this.inner),
+        }
+    }
+
+    pub fn morph<U>(this: &Self, inner: U) -> Node<U> {
+        Node {
+            span: this.span,
+            inner,
         }
     }
 }
 
-impl ToString for Node<Exp> {
+impl ToString for Node<&Exp<'_>> {
     fn to_string(&self) -> String {
         let mut renderer = Renderer::default();
 
-        walk_exp(&mut renderer, Node::as_ref(self));
+        walk_exp(&mut renderer, self);
 
         renderer.into_inner()
     }
 }
 
-impl ToString for Node<Member> {
+impl ToString for Node<&Member<'_>> {
     fn to_string(&self) -> String {
         let mut renderer = Renderer::default();
 
-        renderer.visit_member_exp(Node::as_ref(self));
+        renderer.visit_member_exp(self);
 
         renderer.into_inner()
     }

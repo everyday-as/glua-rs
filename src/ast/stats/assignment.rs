@@ -1,14 +1,13 @@
-use crate::ast::node::Node;
-use crate::ast::Exp;
+use crate::ast::{node::Node, Exp};
 
-#[derive(Clone, Debug)]
-pub struct Assignment {
-    pub vars: Vec<Node<Exp>>,
-    pub exps: Vec<Node<Exp>>,
+#[derive(Clone, Copy, Debug)]
+pub struct Assignment<'a> {
+    pub vars: &'a [Node<&'a Exp<'a>>],
+    pub exps: &'a [Node<&'a Exp<'a>>],
 }
 
-impl Assignment {
-    pub fn new(vars: Vec<Node<Exp>>, exps: Vec<Node<Exp>>) -> Self {
+impl<'a> Assignment<'a> {
+    pub fn new(vars: &'a [Node<&'a Exp>], exps: &'a [Node<&'a Exp>]) -> Self {
         Self { vars, exps }
     }
 }
