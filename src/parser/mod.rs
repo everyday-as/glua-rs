@@ -1,9 +1,13 @@
-pub use logos::Span;
 use std::collections::VecDeque;
+use std::ops::Range;
+
+pub use logos::Span;
 
 use crate::ast::exps::*;
 use crate::ast::node::Node;
 use crate::ast::stats::*;
+use crate::ast::Exp;
+use crate::ast::Stat;
 use crate::ast::*;
 use crate::lexer::*;
 use crate::parser::parselets::nud::TableConstructorParselet;
@@ -11,18 +15,16 @@ use crate::parser::parselets::{led, nud, Led, Nud};
 
 mod parselets;
 
-pub type SpannedToken = (Token, Span);
+pub type SpannedToken<'a> = (Token<'a>, Span);
 
-pub struct Parser {
-    tokens: VecDeque<SpannedToken>,
-    rewind_stack: Vec<SpannedToken>,
-    spans: Vec<usize>,
+pub struct Parser<'source> {
+    tokens: VecDeque<SpannedToken<'source>>,
+    rewind_stack: Vec<SpannedToken<'source>>,
+    last_span: Range<usize>,
 }
 
-impl Parser {
-    pub fn new(tokens: Vec<SpannedToken>) -> Self {
-        // let mut cur_line = 1;
-
+impl<'source> Parser<'source> {
+    pub fn new(tokens: Vec<SpannedToken<'source>>) -> Self {
         Self {
             tokens: tokens
                 .into_iter()
@@ -33,19 +35,16 @@ impl Parser {
                 })
                 .collect(),
             rewind_stack: Vec::new(),
-            spans: Vec::new(),
+            last_span: 0..0,
         }
     }
 
     pub fn parse_chunk(&mut self) -> Result<Block, String> {
         let block = self.parse_block()?;
 
-        match self.tokens.is_empty() {
-            true => Ok(block),
-            false => Err(format!(
-                "Unexpected {:?}, expected EOF",
-                self.tokens.pop_front().unwrap()
-            )),
+        match self.tokens.pop_front() {
+            None => Ok(block),
+            Some(token) => Err(format!("Unexpected {:?}, expected EOF", token)),
         }
     }
 
@@ -53,16 +52,17 @@ impl Parser {
         let mut stats = Vec::new();
 
         // Rewind here, because Lua has SYNTACTICALLY ASCENDED THE MORTAL FUCKING PLANE
-        while let Some(stat) = self.with_rewind(Self::parse_stat, |e| {
-            e == "Unexpected EOF" || e.ends_with("expected stat")
-        }, true)? {
+        while let Some(stat) = self.with_rewind(
+            |p| p.parse_stat(),
+            |e| e == "Unexpected EOF" || e.ends_with("expected stat"),
+        )? {
             self.consume_a(Token::Semicolon);
 
             stats.push(stat);
         }
 
         if self.next_is_in(&[Keyword::Break, Keyword::Continue, Keyword::Return]) {
-            stats.push(self.parse_last_stat()?);
+            stats.push(self.node(|p| p.parse_last_stat())?);
 
             self.consume_a(Token::Semicolon);
         }
@@ -71,15 +71,17 @@ impl Parser {
     }
 
     pub fn parse_stat(&mut self) -> Result<Node<Stat>, String> {
-        self.start_node()?;
+        self.node(Self::parse_stat_impl)
+    }
 
-        let stat = match self.peek(0)? {
+    fn parse_stat_impl(&mut self) -> Result<Stat, String> {
+        match self.peek(0)? {
             Token::Name(_) | Token::LParens => {
                 // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
                 match self
                     .with_rewind(
                         |parser| {
-                            let exp = parser.parse_var().map_err(|_| String::new())?;
+                            let exp = parser.node(|p| p.parse_var()).map_err(|_| String::new())?;
 
                             // Eq or Comma denotes an assignment expression
                             if parser.next_is_in(&[Token::Comma, Token::Op(Op::Eq)]) {
@@ -91,32 +93,29 @@ impl Parser {
                             }
                         },
                         |e| e.is_empty(),
-                        false
                     )?
                     .clone()
                 {
                     // `Assignment`
                     Some(var) => {
-                        self.fork_node()?;
-
                         let mut vars = vec![var];
 
                         while self.consume_a(Token::Comma) {
-                            vars.push(self.parse_var()?)
+                            vars.push(self.node(Self::parse_var)?)
                         }
 
                         self.expect(Op::Eq)?;
 
                         let exps = self.parse_list(Self::parse_exp)?;
 
-                        Ok(self.produce_node(Assignment::new(vars, exps)).into())
+                        Ok(Assignment::new(vars, exps).into())
                     }
 
                     // `FunctionCall`
                     None => {
                         let token = self.peek(0)?;
 
-                        match self.parse_prefix_exp()?.inner {
+                        match self.parse_prefix_exp()? {
                             Exp::FunctionCall(call) => Ok(Stat::FunctionCall(call)),
 
                             Exp::MethodCall(call) => Ok(Stat::MethodCall(call)),
@@ -133,19 +132,15 @@ impl Parser {
                 match keyword {
                     // do block end
                     Keyword::Do => {
-                        self.fork_node()?;
-
                         let body = self.parse_block()?;
 
                         self.expect(Keyword::End)?;
 
-                        Ok(self.produce_node(Do::new(body)).into())
+                        Ok(Do::new(body).into())
                     }
 
                     // while exp do block end
                     Keyword::While => {
-                        self.fork_node()?;
-
                         let cond = self.parse_exp()?;
 
                         self.expect(Keyword::Do)?;
@@ -154,26 +149,22 @@ impl Parser {
 
                         self.expect(Keyword::End)?;
 
-                        Ok(self.produce_node(While::new(cond, body)).into())
+                        Ok(While::new(cond, body).into())
                     }
 
                     // repeat block until exp
                     Keyword::Repeat => {
-                        self.fork_node()?;
-
                         let body = self.parse_block()?;
 
                         self.expect(Keyword::Until)?;
 
                         let cond = self.parse_exp()?;
 
-                        Ok(self.produce_node(RepeatUntil::new(body, cond)).into())
+                        Ok(RepeatUntil::new(body, cond).into())
                     }
 
                     // if exp then block {elseif exp then block} [else block] end
                     Keyword::If => {
-                        self.fork_node()?;
-
                         let cond = self.parse_exp()?;
 
                         self.expect(Keyword::Then)?;
@@ -199,16 +190,12 @@ impl Parser {
 
                         self.expect(Keyword::End)?;
 
-                        Ok(self
-                            .produce_node(IfElse::new(cond, body, else_ifs, else_block))
-                            .into())
+                        Ok(IfElse::new(cond, body, else_ifs, else_block).into())
                     }
 
                     Keyword::For => match self.peek(1)? {
                         // for Name `=´ exp `,´ exp [`,´ exp] do block end
                         Token::Op(Op::Eq) => {
-                            self.fork_node()?;
-
                             let init = {
                                 let name = self.parse_name()?;
 
@@ -234,13 +221,11 @@ impl Parser {
 
                             self.expect(Keyword::End)?;
 
-                            Ok(self.produce_node(For::new(init, test, update, body)).into())
+                            Ok(For::new(init, test, update, body).into())
                         }
 
                         // for namelist in explist do block end
                         _ => {
-                            self.fork_node()?;
-
                             let names = self.parse_list(Self::parse_name)?;
 
                             self.expect(Keyword::In)?;
@@ -253,14 +238,12 @@ impl Parser {
 
                             self.expect(Keyword::End)?;
 
-                            Ok(self.produce_node(ForIn::new(names, exps, body)).into())
+                            Ok(ForIn::new(names, exps, body).into())
                         }
                     },
 
                     // function funcname funcbody
                     Keyword::Function => {
-                        self.fork_node()?;
-
                         let name = {
                             let parts = self
                                 .parse_delimited(Op::Dot, Self::parse_name, |token| {
@@ -278,31 +261,25 @@ impl Parser {
                             name
                         };
 
-                        let body = self.parse_function()?;
+                        let body = self.node(|p| p.parse_function())?;
 
-                        Ok(self
-                            .produce_node(FunctionDef::new(false, name, body))
-                            .into())
+                        Ok(FunctionDef::new(false, name, body).into())
                     }
 
                     Keyword::Local => match self.peek(0)? {
                         // local function Name funcbody
                         Token::Keyword(Keyword::Function) => {
-                            self.fork_node()?;
-
                             self.consume()?;
 
                             let name = self.parse_name()?;
 
-                            let body = self.parse_function()?;
+                            let body = self.node(|p| p.parse_function())?;
 
-                            Ok(self.produce_node(FunctionDef::new(true, name, body)).into())
+                            Ok(FunctionDef::new(true, name, body).into())
                         }
 
                         // local namelist [`=´ explist]
                         _ => {
-                            self.fork_node()?;
-
                             let names = self.parse_list(Self::parse_name)?;
 
                             let init_exps = match self.consume_a(Op::Eq) {
@@ -310,7 +287,7 @@ impl Parser {
                                 false => None,
                             };
 
-                            Ok(self.produce_node(VarDef::new(names, init_exps)).into())
+                            Ok(VarDef::new(names, init_exps).into())
                         }
                     },
 
@@ -318,11 +295,9 @@ impl Parser {
                         // Goto must be followed by a Token::Name
                         Token::Name(label) => {
                             // goto Name
-                            self.fork_node()?;
-
                             self.consume()?;
 
-                            Ok(self.produce_node(Goto::new(label)).into())
+                            Ok(Goto::new(label.to_owned()).into())
                         }
                         _ => Err(format!("Unexpected `{:?}`, expected name", keyword)),
                     },
@@ -332,39 +307,26 @@ impl Parser {
             }
 
             Token::Label(name) => {
-                self.start_node()?;
-
                 self.consume()?;
 
-                Ok(self.produce_node(Label::new(name)).into())
+                Ok(Label::new(name.to_owned()).into())
             }
 
             token => Err(format!("Unexpected `{:?}`, expected stat", token)),
-        };
-
-        Ok(self.produce_node(stat?))
+        }
     }
 
-    fn parse_last_stat(&mut self) -> Result<Node<Stat>, String> {
-        self.start_node()?;
-
+    fn parse_last_stat(&mut self) -> Result<Stat, String> {
         let (token, _) = self.consume()?;
 
-        let stat = match token {
+        match token {
             Token::Keyword(Keyword::Return) => {
                 match self.with_rewind(
-                    |parser| parser.parse_list(Self::parse_exp),
+                    |parser| parser.parse_list(|p| p.parse_exp()),
                     |e| e.ends_with("expected expression"),
-                    false
                 )? {
-                    Some(exps) => {
-                        self.fork_node()?;
-                        Ok(self.produce_node(Return::new(exps)).into())
-                    }
-                    None => {
-                        self.fork_node()?;
-                        Ok(self.produce_node(Return::new(Vec::new())).into())
-                    }
+                    Some(exps) => Ok(Return::new(exps).into()),
+                    None => Ok(Return::new(Vec::new()).into()),
                 }
             }
 
@@ -377,9 +339,7 @@ impl Parser {
                 "Unexpected `{:?}`, expected return, continue or break",
                 token
             )),
-        };
-
-        Ok(self.produce_node(stat?))
+        }
     }
 
     pub fn parse_exp(&mut self) -> Result<Node<Exp>, String> {
@@ -387,90 +347,60 @@ impl Parser {
     }
 
     fn parse_exp_prec(&mut self, min_precedence: Precedence) -> Result<Node<Exp>, String> {
-        self.start_node()?;
+        let mut lhs = self.node(|p| match get_nud_parselet(&p.peek(0)?) {
+            Some(parselet) => {
+                let (token, _) = p.consume()?;
 
-        let mut lhs = {
-            match get_nud_parselet(&self.peek(0)?) {
-                Some(parselet) => {
-                    self.fork_node()?;
-
-                    let (token, _) = self.consume()?;
-
-                    let exp = parselet.parse(self, token)?;
-
-                    self.produce_node(exp)
-                }
-
-                None => self.parse_prefix_exp()?,
+                parselet.parse(p, token)
             }
-        };
+
+            None => p.parse_prefix_exp(),
+        })?;
 
         while min_precedence < self.get_precedence() {
             let (token, _) = self.consume()?;
 
             lhs = match get_led_parselet(&token) {
-                Some(parselet) => {
-                    self.fork_node()?;
-
-                    let exp = parselet.parse(self, lhs, token)?;
-
-                    self.produce_node(exp)
-                }
+                Some(parselet) => self.node(|p| parselet.parse(p, lhs, token))?,
 
                 None => return Err(format!("Unexpected `{:?}` in expression", token)),
             }
         }
 
-        // Consume the latest node so it does not bleed into other areas
-        self.consume_node()?;
-
         Ok(lhs)
     }
 
-    fn parse_prefix_exp(&mut self) -> Result<Node<Exp>, String> {
-        self.start_node()?;
-
-        let mut lhs = {
-            let (token, _) = self.consume()?;
+    fn parse_prefix_exp(&mut self) -> Result<Exp, String> {
+        let mut lhs = self.node(|p| {
+            let (token, _) = p.consume()?;
 
             match get_prefix_nud_parselet(&token) {
-                Some(parselet) => {
-                    self.fork_node()?;
-
-                    let exp = parselet.parse(self, token)?;
-
-                    Ok(self.produce_node(exp))
-                }
+                Some(parselet) => parselet.parse(p, token),
 
                 None => Err(format!("Unexpected `{:?}`, expected expression", token)),
-            }?
-        };
+            }
+        })?;
 
         while let Ok(next) = self.peek(0) {
             if let Some(parselet) = get_prefix_led_parselet(&next) {
-                self.fork_node()?;
+                lhs = self.node(|p| {
+                    let (token, _) = p.consume()?;
 
-                let (token, _) = self.consume()?;
-
-                let exp = parselet.parse(self, lhs, token)?;
-
-                lhs = self.produce_node(exp)
+                    parselet.parse(p, lhs, token)
+                })?;
             } else {
                 break;
             }
         }
 
-        // Consume the latest node so it does not bleed into other areas
-        self.consume_node()?;
-
-        Ok(lhs)
+        Ok(lhs.inner)
     }
 
     /// Parses a var, basically a more selective prefixexp
-    fn parse_var(&mut self) -> Result<Node<Exp>, String> {
+    fn parse_var(&mut self) -> Result<Exp, String> {
         let exp = self.parse_prefix_exp()?;
 
-        match exp.inner {
+        match exp {
             Exp::Index(_) => Ok(exp),
 
             Exp::Member(_) => Ok(exp),
@@ -481,9 +411,7 @@ impl Parser {
         }
     }
 
-    fn parse_function(&mut self) -> Result<Node<Function>, String> {
-        self.start_node()?;
-
+    fn parse_function(&mut self) -> Result<Function, String> {
         self.expect(Token::LParens)?;
 
         let mut params = self.parse_delimited(Token::Comma, Parser::parse_name, |token| {
@@ -500,7 +428,7 @@ impl Parser {
 
         self.expect(Keyword::End)?;
 
-        Ok(self.produce_node(Function::new(params, body)))
+        Ok(Function::new(params, body))
     }
 
     // <Helpers>
@@ -520,28 +448,29 @@ impl Parser {
         }
     }
 
-    fn peek(&self, n: usize) -> Result<Token, String> {
-        match self.tokens.iter().nth(n) {
+    fn peek(&self, n: usize) -> Result<Token<'source>, String> {
+        match self.tokens.get(n) {
             Some((token, _)) => Ok(token.clone()),
 
             None => Err("Unexpected EOF".to_owned()),
         }
     }
 
-    fn consume(&mut self) -> Result<SpannedToken, String> {
+    fn consume(&mut self) -> Result<SpannedToken<'source>, String> {
         self.tokens
             .pop_front()
             .ok_or("Unexpected EOF".to_owned())
-            .and_then(|token| {
+            .map(|token| {
                 self.rewind_stack.push(token.clone());
+                self.last_span = token.1.clone();
 
-                Ok(token)
+                token
             })
     }
 
-    fn expect<E>(&mut self, expected: E) -> Result<(), String>
+    fn expect<'a, E>(&mut self, expected: E) -> Result<(), String>
     where
-        E: Into<Token>,
+        E: Into<Token<'a>>,
     {
         let (expected, (got, _)) = (expected.into(), self.consume()?);
 
@@ -552,9 +481,9 @@ impl Parser {
         }
     }
 
-    fn consume_a<E>(&mut self, expected: E) -> bool
+    fn consume_a<'a, E>(&mut self, expected: E) -> bool
     where
-        E: Into<Token>,
+        E: Into<Token<'a>>,
     {
         return if self.next_is(expected) {
             // If `next_is` returns `true` but `consume` fails something very, very bad has happened
@@ -566,9 +495,9 @@ impl Parser {
         };
     }
 
-    fn next_is<E>(&mut self, expected: E) -> bool
+    fn next_is<'a, E>(&mut self, expected: E) -> bool
     where
-        E: Into<Token>,
+        E: Into<Token<'a>>,
     {
         match self.peek(0) {
             Ok(got) => got == expected.into(),
@@ -577,9 +506,9 @@ impl Parser {
         }
     }
 
-    fn next_is_in<P>(&mut self, possibilities: &[P]) -> bool
+    fn next_is_in<'a, P>(&mut self, possibilities: &[P]) -> bool
     where
-        P: Into<Token> + Clone,
+        P: Into<Token<'a>> + Clone,
     {
         for possibility in possibilities {
             if self.next_is(possibility.clone().into()) {
@@ -590,7 +519,7 @@ impl Parser {
         false
     }
 
-    fn with_rewind<T, F, C>(&mut self, func: F, can_rewind: C, consume_on_error: bool) -> Result<Option<T>, String>
+    fn with_rewind<T, F, C>(&mut self, func: F, can_rewind: C) -> Result<Option<T>, String>
     where
         F: FnOnce(&mut Parser) -> Result<T, String>,
         C: FnOnce(&str) -> bool,
@@ -599,77 +528,36 @@ impl Parser {
 
         match func(self) {
             Ok(result) => Ok(Some(result)),
-            Err(err) => {
-                if consume_on_error {
-                    self.consume_node()?;
-                }
-
-                match can_rewind(&err) {
-                    true => {
-                        while self.rewind_stack.len() > rewind_to {
-                            self.tokens.push_front(self.rewind_stack.pop().unwrap());
-                        }
-
-                        Ok(None)
+            Err(err) => match can_rewind(&err) {
+                true => {
+                    while self.rewind_stack.len() > rewind_to {
+                        self.tokens.push_front(self.rewind_stack.pop().unwrap());
                     }
 
-                    false => Err(err),
+                    Ok(None)
                 }
+
+                false => Err(err),
             },
         }
     }
 
-    // #[track_caller]
-    fn start_node(&mut self) -> Result<(), String> {
-        // let caller_location = std::panic::Location::caller();
-        // println!("start_node from {}:{}", caller_location.file(), caller_location.line());
+    fn node<T>(
+        &mut self,
+        f: impl FnOnce(&mut Self) -> Result<T, String>,
+    ) -> Result<Node<T>, String> {
+        let start = self
+            .tokens
+            .get(0)
+            .ok_or_else(|| "Unexpected EOF".to_owned())?
+            .1
+            .start;
 
-        match self.tokens.front() {
-            Some(token) => {
-                self.spans.push(token.1.start);
+        let inner = f(self)?;
 
-                Ok(())
-            }
-            None => Err("Unexpected EOF".to_owned()),
-        }
-    }
+        let span = start..self.last_span.end;
 
-    // #[track_caller]
-    fn fork_node(&mut self) -> Result<(), String> {
-        // let caller_location = std::panic::Location::caller();
-        // println!("fork_node from {}:{}", caller_location.file(), caller_location.line());
-
-        self.spans.last().copied().map(|span| self.spans.push(span));
-
-        Ok(())
-    }
-
-    // #[track_caller]
-    fn consume_node(&mut self) -> Result<(), String> {
-        // let caller_location = std::panic::Location::caller();
-        // println!("consume_node from {}:{}", caller_location.file(), caller_location.line());
-
-        self.spans.pop();
-
-        Ok(())
-    }
-
-    // #[track_caller]
-    fn produce_node<T>(&mut self, inner: T) -> Node<T> {
-        // let caller_location = std::panic::Location::caller();
-        // println!("produce_node from {}:{}", caller_location.file(), caller_location.line());
-
-        let start = self.spans.pop().unwrap();
-        let end = self.rewind_stack.last().unwrap().1.end;
-
-        Node {
-            span: start..end,
-            inner,
-        }
-    }
-
-    fn produce_node_with_span<T>(&self, span: Span, inner: T) -> Node<T> {
-        Node { span, inner }
+        Ok(Node { span, inner })
     }
     // </Helpers>
 
@@ -691,23 +579,20 @@ impl Parser {
 
             // function{ table }
             Token::LBrace => {
-                self.fork_node()?;
+                let start = self.last_span.start;
 
-                let exp = TableConstructorParselet.parse(self, token)?;
+                let inner = TableConstructorParselet.parse(self, token)?;
 
-                Ok(vec![self.produce_node(exp)])
+                let span = start..self.last_span.end;
+
+                Ok(vec![Node { span, inner }])
             }
 
             // function"string"
-            Token::Literal(Literal::String(arg)) => {
-                self.fork_node()?;
-                let inner_node = self.produce_node(arg);
-
-                self.fork_node()?;
-                let node = self.produce_node(Exp::String(inner_node));
-
-                Ok(vec![node])
-            }
+            Token::Literal(Literal::String(arg)) => Ok(vec![Node {
+                span: self.last_span.clone(),
+                inner: Exp::String(arg.into_owned()),
+            }]),
 
             token => Err(format!("Unexpected {:?}, expected args", token)),
         }
@@ -718,8 +603,8 @@ impl Parser {
         let (token, _) = self.consume()?;
 
         match token {
-            Token::Name(name) => Ok(name),
-            Token::Keyword(Keyword::Goto) => Ok("goto".to_string()),
+            Token::Name(name) => Ok(name.to_owned()),
+            Token::Keyword(Keyword::Goto) => Ok(String::from("goto")),
 
             token => Err(format!("Unexpected `{:?}`, expected name", token)),
         }
@@ -732,8 +617,9 @@ impl Parser {
         is_end: IE,
     ) -> Result<Vec<T>, String>
     where
-        D: Into<Token>,
-        P: Fn(&mut Parser) -> Result<T, String>,
+        T: 'source,
+        D: Into<Token<'source>>,
+        P: Fn(&mut Parser<'source>) -> Result<T, String>,
         IE: Fn(Token) -> bool,
     {
         let (mut items, delim) = (Vec::new(), delim.into());
@@ -751,7 +637,7 @@ impl Parser {
 
     fn parse_list<T, P>(&mut self, parse: P) -> Result<Vec<T>, String>
     where
-        P: Fn(&mut Parser) -> Result<T, String>,
+        P: Fn(&mut Parser<'source>) -> Result<T, String>,
     {
         let mut items = Vec::new();
 
@@ -765,7 +651,6 @@ impl Parser {
 
         Ok(items)
     }
-
     // </Parse Helpers>
 }
 

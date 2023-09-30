@@ -1,5 +1,3 @@
-use crate::lexer::Token;
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Op {
     Add,
@@ -22,10 +20,4 @@ pub enum Op {
     Or,
     Not,
     Sub,
-}
-
-impl Into<Token> for Op {
-    fn into(self) -> Token {
-        Token::Op(self)
-    }
 }

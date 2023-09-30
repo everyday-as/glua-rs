@@ -1,5 +1,6 @@
 use crate::ast::node::Node;
-use crate::ast::{Block, Exp, Stat};
+use crate::ast::Block;
+use crate::ast::Exp;
 
 #[derive(Clone, Debug)]
 pub struct For {
@@ -22,11 +23,5 @@ impl For {
             update,
             body,
         }
-    }
-}
-
-impl Into<Stat> for Node<For> {
-    fn into(self) -> Stat {
-        Stat::For(self)
     }
 }

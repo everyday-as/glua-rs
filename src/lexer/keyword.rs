@@ -1,5 +1,3 @@
-use crate::lexer::Token;
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Keyword {
     Break,
@@ -20,10 +18,4 @@ pub enum Keyword {
     // GMod specific
     Continue,
     Goto,
-}
-
-impl Into<Token> for Keyword {
-    fn into(self) -> Token {
-        Token::Keyword(self)
-    }
 }

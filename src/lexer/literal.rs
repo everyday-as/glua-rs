@@ -1,15 +1,9 @@
-use crate::lexer::Token;
+use std::borrow::Cow;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Literal {
+pub enum Literal<'a> {
     Bool(bool),
     Nil,
     Number(f64),
-    String(String),
-}
-
-impl Into<Token> for Literal {
-    fn into(self) -> Token {
-        Token::Literal(self)
-    }
+    String(Cow<'a, str>),
 }
