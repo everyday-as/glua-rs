@@ -138,11 +138,54 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
         value.extend_from_slice(&slice[base..offset]);
 
         match slice[offset + 1] {
-            b'\\' => {
-                value.push(b'\\');
+            b'a' => {
+                value.push(7);
 
                 base = offset + 2;
             }
+
+            b'b' => {
+                value.push(8);
+
+                base = offset + 2;
+            }
+
+            b'f' => {
+                value.push(12);
+
+                base = offset + 2;
+            }
+
+            b'n' => {
+                value.push(b'\n');
+
+                base = offset + 2;
+            }
+
+            b'r' => {
+                value.push(b'\r');
+
+                base = offset + 2;
+            }
+
+            b't' => {
+                value.push(b'\t');
+
+                base = offset + 2;
+            }
+
+            b'v' => {
+                value.push(11);
+
+                base = offset + 2;
+            }
+
+            b'\\' | b'"' | b'\'' |  b'\n' => {
+                value.push(slice[offset + 1]);
+
+                base = offset + 2;
+            }
+
 
             b'0'..=b'9' => {
                 let mut end = offset + 2;
