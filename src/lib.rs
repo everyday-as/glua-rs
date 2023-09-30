@@ -24,11 +24,11 @@ mod tests {
     fn it_works() {
         let bump = Bump::new();
 
-        let mut parser = Parser::try_from_str_in(CODE, &bump).unwrap();
+        let tokens = Parser::lex(CODE, &bump).unwrap();
 
-        let chunk = parser.parse_chunk()
-            .map_err(|e| e.to_string())
-            .unwrap();
+        let mut parser = Parser::new_in(&tokens, &bump);
+
+        let chunk = parser.parse_chunk().map_err(|e| e.to_string()).unwrap();
 
         println!("Allocated: {}", convert(bump.allocated_bytes() as f64));
         // println!("Wasted: {}", convert(parser.waste as f64));
@@ -48,10 +48,9 @@ mod benches {
     use std::hint::black_box;
 
     use bumpalo::Bump;
-    use logos::Logos;
     use test::bench::Bencher;
 
-    use crate::{lexer::Token, Parser};
+    use crate::Parser;
 
     static CODE: &'static str = include_str!("../test.lua");
 
@@ -60,9 +59,7 @@ mod benches {
         b.iter(|| {
             let bump = Bump::new();
 
-            Token::lexer_with_extras(CODE, &bump)
-                .map(black_box)
-                .for_each(drop)
+            black_box(Parser::lex(CODE, &bump).unwrap());
         });
     }
 
@@ -71,7 +68,9 @@ mod benches {
         b.iter(|| {
             let bump = Bump::new();
 
-            let mut parser = Parser::try_from_str_in(CODE, &bump).unwrap();
+            let tokens = Parser::lex(CODE, &bump).unwrap();
+
+            let mut parser = Parser::new_in(&tokens, &bump);
 
             black_box(parser.parse_chunk().unwrap());
         });

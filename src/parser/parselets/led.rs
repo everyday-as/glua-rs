@@ -195,9 +195,9 @@ impl Led for MethodCallParselet {
         let name = parser.parse_name()?;
 
         let args = {
-            let token = *parser.consume()?;
+            let token = parser.consume()?;
 
-            parser.parse_args(token)?
+            parser.parse_args(*token)?
         };
 
         Ok(MethodCall::new(lhs, name, args.into_bump_slice()).into())

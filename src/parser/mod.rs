@@ -25,7 +25,7 @@ pub type SpannedToken<'a> = (Token<'a>, Span);
 
 pub struct Parser<'a> {
     bump: &'a Bump,
-    tokens: Vec<SpannedToken<'a>>,
+    tokens: &'a [SpannedToken<'a>],
     pos: usize,
 }
 
@@ -35,21 +35,23 @@ enum Rewind<'a> {
 }
 
 impl<'a> Parser<'a> {
-    pub fn try_from_str_in(source: &'a str, bump: &'a Bump) -> Result<'a, Self> {
-        let tokens = Token::lexer_with_extras(source, bump)
+    pub fn lex(source: &'a str, bump: &'a Bump) -> Result<'a, Vec<SpannedToken<'a>>> {
+        Token::lexer_with_extras(source, bump)
             .spanned()
             .filter_map(|(res, span)| match res {
                 Ok(Token::Comment(_)) => None,
                 Ok(token) => Some(Ok((token, span))),
                 Err(_) => Some(Err(Error::Lexer(span))),
             })
-            .collect::<Result<Vec<_>, _>>()?;
+            .collect()
+    }
 
-        Ok(Self {
-            bump,
+    pub fn new_in(tokens: &'a [SpannedToken<'a>], bump: &'a Bump) -> Self {
+        Self {
             tokens,
+            bump,
             pos: 0,
-        })
+        }
     }
 
     pub fn parse_chunk(&mut self) -> Result<'a, Block<'a>> {
@@ -134,8 +136,6 @@ impl<'a> Parser<'a> {
             }
 
             Token::Keyword(keyword) => {
-                let keyword = *keyword;
-
                 self.consume()?;
 
                 match keyword {
@@ -321,7 +321,7 @@ impl<'a> Parser<'a> {
                         }
                     },
 
-                    Keyword::Goto => match *self.peek(0)? {
+                    Keyword::Goto => match self.peek(0)? {
                         // Goto must be followed by a Token::Name
                         Token::Name(label) => {
                             // goto Name
@@ -333,21 +333,19 @@ impl<'a> Parser<'a> {
                         token => Err(Error::unexpected_token(
                             self.span()?,
                             Expectation::Name,
-                            token,
+                            *token,
                         )),
                     },
 
                     _ => Err(Error::unexpected_token(
                         self.span()?,
                         Expectation::Stat,
-                        keyword,
+                        *keyword,
                     )),
                 }
             }
 
             Token::Label(name) => {
-                let name = *name;
-
                 self.consume()?;
 
                 Ok(Label::new(name).into())
@@ -385,15 +383,11 @@ impl<'a> Parser<'a> {
             // GMod specific
             Token::Keyword(Keyword::Continue) => Ok(Stat::Continue),
 
-            token => {
-                let token = *token;
-
-                Err(Error::unexpected_token(
-                    self.span()?,
-                    Expectation::tokens([Keyword::Return, Keyword::Continue, Keyword::Break]),
-                    token,
-                ))
-            }
+            token => Err(Error::unexpected_token(
+                self.span()?,
+                Expectation::tokens([Keyword::Return, Keyword::Continue, Keyword::Break]),
+                *token,
+            )),
         }
     }
 
@@ -404,23 +398,23 @@ impl<'a> Parser<'a> {
     fn parse_exp_prec(&mut self, min_precedence: Precedence) -> Result<'a, Exp<'a>> {
         let mut lhs = self.stack_node(|p| match get_nud_parselet(p.peek(0)?) {
             Some(parselet) => {
-                let token = *p.consume()?;
+                let token = p.consume()?;
 
-                parselet.parse(p, token)
+                parselet.parse(p, *token)
             }
 
             None => p.parse_prefix_exp(),
         })?;
 
         while min_precedence < self.get_precedence() {
-            let token = *self.consume()?;
+            let token = self.consume()?;
 
-            lhs = match get_led_parselet(&token) {
+            lhs = match get_led_parselet(token) {
                 Some(parselet) => {
-                    self.stack_node(move |p| parselet.parse(p, p.alloc_node(lhs), token))?
+                    self.stack_node(move |p| parselet.parse(p, p.alloc_node(lhs), *token))?
                 }
 
-                None => return Err(Error::unexpected_token(self.span()?, None, token)),
+                None => return Err(Error::unexpected_token(self.span()?, None, *token)),
             }
         }
 
@@ -429,15 +423,15 @@ impl<'a> Parser<'a> {
 
     fn parse_prefix_exp(&mut self) -> Result<'a, Exp<'a>> {
         let mut lhs = self.stack_node(|p| {
-            let token = *p.consume()?;
+            let token = p.consume()?;
 
-            match get_prefix_nud_parselet(&token) {
-                Some(parselet) => parselet.parse(p, token),
+            match get_prefix_nud_parselet(token) {
+                Some(parselet) => parselet.parse(p, *token),
 
                 None => Err(Error::unexpected_token(
                     p.last_span()?,
                     Expectation::Expression,
-                    token,
+                    *token,
                 )),
             }
         })?;
@@ -445,9 +439,9 @@ impl<'a> Parser<'a> {
         while let Ok(next) = self.peek(0) {
             if let Some(parselet) = get_prefix_led_parselet(next) {
                 lhs = self.stack_node(|p| {
-                    let token = *p.consume()?;
+                    let token = p.consume()?;
 
-                    parselet.parse(p, p.alloc_node(lhs), token)
+                    parselet.parse(p, p.alloc_node(lhs), *token)
                 })?;
             } else {
                 break;
@@ -513,7 +507,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn peek(&self, n: usize) -> Result<'a, &Token<'a>> {
+    fn peek(&self, n: usize) -> Result<'a, &'a Token<'a>> {
         match self.tokens.get(self.pos + n) {
             Some((token, _)) => Ok(token),
 
@@ -521,16 +515,15 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume(&mut self) -> Result<'a, &Token<'a>> {
-        let token = self
-            .tokens
+    fn consume(&mut self) -> Result<'a, &'a Token<'a>> {
+        self.tokens
             .get(self.pos)
             .ok_or(Error::unexpected_eof(None::<Expectation>))
-            .map(|(token, _)| token)?;
+            .map(|(token, _)| {
+                self.pos += 1;
 
-        self.pos += 1;
-
-        Ok(token)
+                token
+            })
     }
 
     fn expect<E>(&mut self, expected: E) -> Result<'a, ()>
@@ -548,9 +541,7 @@ impl<'a> Parser<'a> {
         if expected.eq(got) {
             Ok(())
         } else {
-            let got = *got;
-
-            Err(Error::unexpected_token(self.span()?, expected, got))
+            Err(Error::unexpected_token(self.span()?, expected, *got))
         }
     }
 
@@ -683,15 +674,11 @@ impl<'a> Parser<'a> {
             Token::Name(name) => Ok(name),
             Token::Keyword(Keyword::Goto) => Ok("goto"),
 
-            _ => {
-                let token = *token;
-
-                Err(Error::unexpected_token(
-                    self.span()?,
-                    Expectation::Name,
-                    token,
-                ))
-            }
+            _ => Err(Error::unexpected_token(
+                self.span()?,
+                Expectation::Name,
+                *token,
+            )),
         }
     }
 
