@@ -92,12 +92,12 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_stat(&mut self) -> Result<'a, Stat<'a>> {
-        match self.peek(0)? {
+        let token = self.peek(0)?;
+
+        match token {
             // We should only match `goto` as a potential expression if it's _not_ followed by a name,
             // as that would make it a valid `goto` statement.
-            token @ Token::Keyword(Keyword::Goto)
-            | token @ Token::Name(_)
-            | token @ Token::LParens
+            Token::Keyword(Keyword::Goto) | Token::Name(_) | Token::LParens
                 if !matches!(token, Token::Keyword(Keyword::Goto))
                     || !matches!(self.peek(1), Ok(Token::Name(_))) =>
             {
@@ -136,7 +136,7 @@ impl<'a> Parser<'a> {
                         _ => Err(Error::unexpected_token(
                             self.span()?,
                             Expectation::FunctionCall,
-                            *self.peek(0)?,
+                            *token,
                         )),
                     },
                 }
