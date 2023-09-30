@@ -180,8 +180,8 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
                 base = offset + 2;
             }
 
-            b'\\' | b'"' | b'\'' | b'\n' => {
-                value.push(slice[offset + 1]);
+            byte @ (b'\\' | b'"' | b'\'' | b'\n') => {
+                value.push(byte);
 
                 base = offset + 2;
             }
