@@ -1,5 +1,5 @@
 use bumpalo::{
-    collections::{String as BumpString, Vec},
+    collections::{Vec as BumpVec},
     Bump,
 };
 use logos::{Lexer, Logos, Source};
@@ -56,7 +56,7 @@ pub enum Token<'a> {
     })]
     #[regex(r#""([^"\\\n]|\\.)*""#, | lex | string_literal(lex).map(Literal::String))]
     #[regex(r"'([^'\\\n]|\\.)*'", | lex | string_literal(lex).map(Literal::String))]
-    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(Literal::String))]
+    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(|s| Literal::String(s.as_bytes())))]
     Literal(Literal<'a>),
     #[token("(")]
     LParens,
@@ -122,12 +122,12 @@ impl From<Op> for Token<'_> {
     }
 }
 
-fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
+fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a [u8]> {
     let slice = lexer.slice().as_bytes();
 
     let pad = slice.starts_with(b"[") as usize + 1;
 
-    let mut value = Vec::new_in(lexer.extras);
+    let mut value = BumpVec::new_in(lexer.extras);
 
     let mut base = pad;
     for offset in memchr::memchr_iter(b'\\', slice) {
@@ -222,14 +222,12 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a str> {
     }
 
     if base == pad {
-        return Some(&lexer.slice()[pad..slice.len() - pad]);
+        return Some(&slice[pad..slice.len() - pad]);
     } else if base < slice.len() - pad {
         value.extend_from_slice(&slice[base..slice.len() - pad])
     }
 
-    let string = BumpString::from_utf8(value).ok()?;
-
-    Some(string.into_bump_str())
+    Some(value.into_bump_slice())
 }
 
 fn comment<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {

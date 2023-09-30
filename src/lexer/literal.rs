@@ -3,5 +3,5 @@ pub enum Literal<'a> {
     Bool(bool),
     Nil,
     Number(f64),
-    String(&'a str),
+    String(&'a [u8]),
 }

@@ -14,7 +14,7 @@ pub enum Exp<'a> {
     Nil,
     Number(f64),
     Ref(&'a str),
-    String(&'a str),
+    String(&'a [u8]),
     Table(TableConstructor<'a>),
     Unary(Unary<'a>),
     VarArgs,

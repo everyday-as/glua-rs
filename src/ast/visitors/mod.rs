@@ -103,7 +103,7 @@ pub trait Visitor {
 
     fn visit_ref_exp(&mut self, _v: &Node<&str>) {}
 
-    fn visit_string_exp(&mut self, _v: &Node<&str>) {}
+    fn visit_string_exp(&mut self, _v: &Node<&[u8]>) {}
 
     fn visit_var_args_exp(&mut self, _v: &Node<()>) {}
 

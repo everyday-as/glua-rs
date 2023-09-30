@@ -88,7 +88,7 @@ impl Nud for TableConstructorParselet {
                 Token::Keyword(Keyword::Goto) | Token::Name(_)
                     if parser.peek(1)? == &Token::Op(Op::Eq) =>
                 {
-                    let key = parser.node(|p| p.parse_name().map(Exp::String))?;
+                    let key = parser.node(|p| p.parse_name().map(|s| Exp::String(s.as_bytes())))?;
 
                     parser.consume()?;
 
