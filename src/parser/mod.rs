@@ -37,14 +37,22 @@ enum Rewind<'a> {
 
 impl<'a> Parser<'a> {
     pub fn lex(source: &'a str, bump: &'a Bump) -> Result<'a, Vec<SpannedToken<'a>>> {
-        Token::lexer_with_extras(source, bump)
-            .spanned()
-            .filter_map(|(res, span)| match res {
-                Ok(Token::Comment(_)) => None,
-                Ok(token) => Some(Ok((token, span))),
-                Err(_) => Some(Err(Error::Lexer(span))),
-            })
-            .collect()
+        let lex = || {
+            Token::lexer_with_extras(source, bump)
+                .spanned()
+                .filter_map(|(res, span)| match res {
+                    Ok(Token::Comment(_)) => None,
+                    Ok(token) => Some(Ok((token, span))),
+                    Err(_) => Some(Err(Error::Lexer(span))),
+                })
+                .collect()
+        };
+
+        if cfg!(debug_assertions) {
+            stacker::maybe_grow(source.len() * 96, source.len() * 96, lex)
+        } else {
+            lex()
+        }
     }
 
     pub fn new_in(tokens: &'a [SpannedToken<'a>], bump: &'a Bump) -> Self {
