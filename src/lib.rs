@@ -12,7 +12,6 @@ mod tests {
     };
 
     use bumpalo::Bump;
-    use pretty_bytes::converter::convert;
 
     use crate::{parser::Error, Parser};
 
@@ -24,18 +23,33 @@ mod tests {
 
         let tokens = unwrap(Parser::lex(CODE, &bump));
 
+        println!("Token count: {}", tokens.len());
+
         let mut parser = Parser::new_in(&tokens, &bump);
 
         let chunk = unwrap(parser.parse_chunk());
 
-        println!("Allocated: {}", convert(bump.allocated_bytes() as f64));
+        #[cfg(debug_assertions)]
+        {
+            println!(
+                "Allocated: {} ({} wasted)",
+                pretty_bytes::converter::convert(bump.allocated_bytes() as f64),
+                pretty_bytes::converter::convert(parser.stats.wasted_mem as f64)
+            );
+            println!(
+                "Rewinds: {} ({} tokens, {}% overhead)",
+                parser.stats.rewinds,
+                parser.stats.rewind_tok,
+                ((parser.stats.rewind_tok as f64 / tokens.len() as f64) * 100. * 100.).round()
+                    / 100.
+            );
+        }
 
         let file = File::create("test.parsed").unwrap();
 
         let mut writer = BufWriter::new(file);
 
         write!(writer, "{:#?}", chunk).unwrap();
-        // println!("Wasted: {}", convert(parser.waste as f64));
     }
 
     fn unwrap<T>(res: Result<T, Error>) -> T {

@@ -9,9 +9,8 @@ static CODE: &'static str = include_str!("../test.lua");
 
 fn lexer(c: &mut Criterion) {
     c.benchmark_group("lexer")
-        .sample_size(10_000)
-        .warm_up_time(Duration::from_secs(10))
-        .measurement_time(Duration::from_secs(30))
+        .sample_size(1_000)
+        .significance_level(0.01)
         .throughput(Throughput::Bytes(CODE.len() as u64))
         .bench_function("raw", |b| {
             b.iter(|| {
@@ -24,36 +23,39 @@ fn lexer(c: &mut Criterion) {
 
 fn parser(c: &mut Criterion) {
     c.benchmark_group("parser")
-        .sample_size(10_000)
-        .warm_up_time(Duration::from_secs(10))
+        .sample_size(3000)
         .measurement_time(Duration::from_secs(30))
+        .significance_level(0.01)
         .bench_function("lex", |b| {
-            b.iter(|| {
-                let bump = Bump::new();
+            let mut bump = Bump::new();
 
-                let _ = black_box(Parser::lex(CODE, &bump));
+            b.iter(|| {
+                let _ = Parser::lex(CODE, &bump);
+
+                bump.reset();
             })
         })
         .bench_function("parse_chunk", |b| {
             let lexer_bump = Bump::new();
             let tokens = Parser::lex(CODE, &lexer_bump).unwrap();
 
+            let mut parser_bump = Bump::new();
             b.iter(|| {
-                let bump = Bump::new();
-
-                let mut parser = Parser::new_in(&tokens, &bump);
-
+                let mut parser = Parser::new_in(&tokens, &parser_bump);
                 let _ = black_box(parser.parse_chunk());
-            })
+                parser_bump.reset();
+            });
         })
         .bench_function("parse_full", |b| {
-            b.iter(|| {
-                let bump = Bump::new();
+            let mut bump = Bump::new();
 
+            b.iter(|| {
                 let tokens = Parser::lex(CODE, &bump).unwrap();
                 let mut parser = Parser::new_in(&tokens, &bump);
 
                 let _ = black_box(parser.parse_chunk());
+
+                bump.reset();
             })
         });
 }

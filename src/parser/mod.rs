@@ -28,6 +28,15 @@ pub struct Parser<'a> {
     bump: &'a Bump,
     tokens: &'a [SpannedToken<'a>],
     pos: usize,
+    #[cfg(debug_assertions)]
+    pub stats: Stats,
+}
+
+#[derive(Default)]
+pub struct Stats {
+    pub rewinds: usize,
+    pub rewind_tok: usize,
+    pub wasted_mem: usize,
 }
 
 enum Rewind<'a> {
@@ -60,6 +69,8 @@ impl<'a> Parser<'a> {
             tokens,
             bump,
             pos: 0,
+            #[cfg(debug_assertions)]
+            stats: Stats::default(),
         }
     }
 
@@ -73,7 +84,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_block(&mut self) -> Result<'a, Block<'a>> {
-        let mut stats = BumpVec::new_in(self.bump);
+        let mut stats = BumpVec::with_capacity_in(1, self.bump);
 
         // Rewind here, because Lua has SYNTACTICALLY ASCENDED THE MORTAL FUCKING PLANE
         while let Some(stat) = self.with_rewind(|p| match p.node(Self::parse_stat) {
@@ -613,12 +624,22 @@ impl<'a> Parser<'a> {
     where
         F: FnOnce(&mut Parser<'a>) -> Result<'a, T, Rewind<'a>>,
     {
+        #[cfg(debug_assertions)]
+        let mem = self.bump.allocated_bytes();
+
         let rewind_to = self.pos;
 
         match func(self) {
             Ok(result) => Ok(Some(result)),
             Err(err) => match err {
                 Rewind::Rewind => {
+                    #[cfg(debug_assertions)]
+                    {
+                        self.stats.rewinds += 1;
+                        self.stats.rewind_tok += self.pos.saturating_sub(rewind_to);
+                        self.stats.wasted_mem += self.bump.allocated_bytes() - mem;
+                    }
+
                     self.pos = rewind_to;
 
                     Ok(None)
@@ -648,6 +669,7 @@ impl<'a> Parser<'a> {
     }
 
     /// Allocate a stack node on the bump heap
+    #[inline(always)]
     fn alloc_node<T>(&self, node: Node<T>) -> Node<&'a T> {
         Node::map(node, |value| self.bump.alloc(value) as &_)
     }
