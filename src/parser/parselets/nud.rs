@@ -12,8 +12,8 @@ use crate::{
 pub struct EllipsisParselet;
 
 impl Nud for EllipsisParselet {
-    fn parse<'a>(&self, _parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::Ellipsis, token);
+    fn parse<'a>(&self, _parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>> {
+        debug_assert_eq!(Token::Ellipsis, *token);
 
         Ok(Exp::VarArgs)
     }
@@ -22,8 +22,8 @@ impl Nud for EllipsisParselet {
 pub struct FunctionParselet;
 
 impl Nud for FunctionParselet {
-    fn parse<'a>(&self, parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::Keyword(Keyword::Function), token);
+    fn parse<'a>(&self, parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>> {
+        debug_assert_eq!(Token::Keyword(Keyword::Function), *token);
 
         parser.parse_function().map(|function| function.into())
     }
@@ -32,12 +32,12 @@ impl Nud for FunctionParselet {
 pub struct LiteralParselet;
 
 impl Nud for LiteralParselet {
-    fn parse<'a>(&self, _parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>> {
+    fn parse<'a>(&self, _parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>> {
         match token {
             Token::Literal(literal) => match literal {
-                Literal::Bool(value) => Ok(Exp::Bool(value)),
+                Literal::Bool(value) => Ok(Exp::Bool(*value)),
                 Literal::Nil => Ok(Exp::Nil),
-                Literal::Number(value) => Ok(Exp::Number(value)),
+                Literal::Number(value) => Ok(Exp::Number(*value)),
                 Literal::String(value) => Ok(Exp::String(value)),
             },
 
@@ -49,7 +49,7 @@ impl Nud for LiteralParselet {
 pub struct NameParselet;
 
 impl Nud for NameParselet {
-    fn parse<'a>(&self, _parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>> {
+    fn parse<'a>(&self, _parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>> {
         let name = match token {
             Token::Name(name) => name,
             Token::Keyword(Keyword::Goto) => "goto",
@@ -63,8 +63,8 @@ impl Nud for NameParselet {
 pub struct ParensParselet;
 
 impl Nud for ParensParselet {
-    fn parse<'a>(&self, parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::LParens, token);
+    fn parse<'a>(&self, parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>> {
+        debug_assert_eq!(Token::LParens, *token);
 
         let exp = parser.parse_exp()?;
 
@@ -77,8 +77,8 @@ impl Nud for ParensParselet {
 pub struct TableConstructorParselet;
 
 impl Nud for TableConstructorParselet {
-    fn parse<'a>(&self, parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::LBrace, token);
+    fn parse<'a>(&self, parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>> {
+        debug_assert_eq!(Token::LBrace, *token);
 
         let mut fields = Vec::new_in(parser.bump);
 
@@ -96,8 +96,7 @@ impl Nud for TableConstructorParselet {
 
                     let field = Field::new(Some(key), value);
 
-                    parser.consume_a(Token::Semicolon);
-                    parser.consume_a(Token::Comma);
+                    parser.consume_one_of([Token::Comma, Token::Semicolon]);
 
                     field
                 }
@@ -114,8 +113,7 @@ impl Nud for TableConstructorParselet {
 
                     let value = parser.node(Parser::parse_exp)?;
 
-                    parser.consume_a(Token::Semicolon);
-                    parser.consume_a(Token::Comma);
+                    parser.consume_one_of([Token::Comma, Token::Semicolon]);
 
                     Field::new(Some(key), value)
                 }
@@ -124,8 +122,7 @@ impl Nud for TableConstructorParselet {
                 _ => {
                     let value = parser.node(Parser::parse_exp)?;
 
-                    parser.consume_a(Token::Semicolon);
-                    parser.consume_a(Token::Comma);
+                    parser.consume_one_of([Token::Comma, Token::Semicolon]);
 
                     Field::new(None, value)
                 }
@@ -139,7 +136,7 @@ impl Nud for TableConstructorParselet {
 pub struct UnaryParselet;
 
 impl Nud for UnaryParselet {
-    fn parse<'a>(&self, parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>> {
+    fn parse<'a>(&self, parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>> {
         let op = match token {
             Token::Op(Op::Len) => UnOp::Len,
             Token::Op(Op::Not) => UnOp::Not,

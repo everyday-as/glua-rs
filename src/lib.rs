@@ -1,5 +1,3 @@
-// #![feature(test)]
-
 pub use self::parser::Parser;
 
 pub mod ast;
@@ -16,7 +14,7 @@ mod tests {
     use bumpalo::Bump;
     use pretty_bytes::converter::convert;
 
-    use crate::Parser;
+    use crate::{parser::Error, Parser};
 
     static CODE: &'static str = include_str!("../test.lua");
 
@@ -24,56 +22,32 @@ mod tests {
     fn it_works() {
         let bump = Bump::new();
 
-        let tokens = Parser::lex(CODE, &bump).unwrap();
+        let tokens = unwrap(Parser::lex(CODE, &bump));
 
         let mut parser = Parser::new_in(&tokens, &bump);
 
-        let chunk = parser.parse_chunk().map_err(|e| e.to_string()).unwrap();
+        let chunk = unwrap(parser.parse_chunk());
 
         println!("Allocated: {}", convert(bump.allocated_bytes() as f64));
-        // println!("Wasted: {}", convert(parser.waste as f64));
 
         let file = File::create("test.parsed").unwrap();
 
         let mut writer = BufWriter::new(file);
 
         write!(writer, "{:#?}", chunk).unwrap();
+        // println!("Wasted: {}", convert(parser.waste as f64));
+    }
+
+    fn unwrap<T>(res: Result<T, Error>) -> T {
+        match res {
+            Err(err) => match err {
+                Error::Lexer(ref span) => {
+                    panic!("{:?} in `{}`", err, &CODE[span.start..span.end]);
+                }
+                _ => panic!("{:?}", err),
+            },
+
+            Ok(value) => value,
+        }
     }
 }
-
-/*#[cfg(test)]
-mod benches {
-    extern crate test;
-
-    use std::hint::black_box;
-
-    use bumpalo::Bump;
-    use test::bench::Bencher;
-
-    use crate::Parser;
-
-    static CODE: &'static str = include_str!("../test.lua");
-
-    #[bench]
-    fn lexer(b: &mut Bencher) {
-        b.iter(|| {
-            let bump = Bump::new();
-
-            black_box(Parser::lex(CODE, &bump).unwrap());
-        });
-    }
-
-    #[bench]
-    fn parser(b: &mut Bencher) {
-        b.iter(|| {
-            let bump = Bump::new();
-
-            let tokens = Parser::lex(CODE, &bump).unwrap();
-
-            let mut parser = Parser::new_in(&tokens, &bump);
-
-            black_box(parser.parse_chunk().unwrap());
-        });
-    }
-}
-*/

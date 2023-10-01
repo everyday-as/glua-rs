@@ -32,6 +32,7 @@ impl<T> Node<T> {
         self.inner
     }
 
+    #[inline]
     pub fn map<U>(this: Self, cb: impl FnOnce(T) -> U) -> Node<U> {
         Node {
             span: this.span,
@@ -39,6 +40,7 @@ impl<T> Node<T> {
         }
     }
 
+    #[inline]
     pub fn morph<U>(this: &Self, inner: U) -> Node<U> {
         Node {
             span: this.span,

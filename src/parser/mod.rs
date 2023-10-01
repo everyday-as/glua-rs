@@ -99,49 +99,51 @@ impl<'a> Parser<'a> {
             // We should only match `goto` as a potential expression if it's _not_ followed by a name,
             // as that would make it a valid `goto` statement.
             Token::Keyword(Keyword::Goto) | Token::Name(_) | Token::LParens
-            if !matches!(token, Token::Keyword(Keyword::Goto))
-                || !matches!(self.peek(1), Ok(Token::Name(_))) =>
-                {
-                    // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
-                    match self.with_rewind(|parser| {
-                        let exp = parser.node(Self::parse_var).map_err(|_| Rewind::Rewind)?;
+                if !matches!(token, Token::Keyword(Keyword::Goto))
+                    || !matches!(self.peek(1), Ok(Token::Name(_))) =>
+            {
+                // Ambiguously an `Assignment` or a `FunctionCall`, so we have to rewind
+                match self.with_rewind(|parser| {
+                    let exp = parser
+                        .stack_node(Self::parse_var)
+                        .map_err(|_| Rewind::Rewind)?;
 
-                        // Eq or Comma denotes an assignment expression
-                        if parser.next_is_in([Token::Comma, Token::Op(Op::Eq)]) {
-                            Ok(exp)
-                        } else {
-                            Err(Rewind::Rewind)
-                        }
-                    })? {
-                        // `Assignment`
-                        Some(var) => {
-                            let mut vars = bumpalo::vec![in self.bump; var];
-
-                            while self.consume_a(Token::Comma) {
-                                vars.push(self.node(Self::parse_var)?)
-                            }
-
-                            self.expect(Op::Eq)?;
-
-                            let exps = self.parse_list(|p| p.node(Self::parse_exp))?;
-
-                            Ok(Assignment::new(vars.into_bump_slice(), exps.into_bump_slice()).into())
-                        }
-
-                        // `FunctionCall`
-                        None => match self.parse_prefix_exp()? {
-                            Exp::FunctionCall(call) => Ok(Stat::FunctionCall(call)),
-
-                            Exp::MethodCall(call) => Ok(Stat::MethodCall(call)),
-
-                            _ => Err(Error::unexpected_token(
-                                self.span()?,
-                                Expectation::FunctionCall,
-                                *token,
-                            )),
-                        },
+                    // Eq or Comma denotes an assignment expression
+                    if parser.next_is_in([Token::Comma, Token::Op(Op::Eq)]) {
+                        Ok(parser.alloc_node(exp))
+                    } else {
+                        Err(Rewind::Rewind)
                     }
+                })? {
+                    // `Assignment`
+                    Some(var) => {
+                        let mut vars = bumpalo::vec![in self.bump; var];
+
+                        while self.consume_a(Token::Comma) {
+                            vars.push(self.node(Self::parse_var)?)
+                        }
+
+                        self.expect(Op::Eq)?;
+
+                        let exps = self.parse_list(|p| p.node(Self::parse_exp))?;
+
+                        Ok(Assignment::new(vars.into_bump_slice(), exps.into_bump_slice()).into())
+                    }
+
+                    // `FunctionCall`
+                    None => match self.parse_prefix_exp()? {
+                        Exp::FunctionCall(call) => Ok(Stat::FunctionCall(call)),
+
+                        Exp::MethodCall(call) => Ok(Stat::MethodCall(call)),
+
+                        _ => Err(Error::unexpected_token(
+                            self.span()?,
+                            Expectation::FunctionCall,
+                            *token,
+                        )),
+                    },
                 }
+            }
 
             Token::Keyword(keyword) => {
                 self.consume()?;
@@ -279,7 +281,8 @@ impl<'a> Parser<'a> {
                                 |token| [Token::LParens, Token::Op(Op::Colon)].contains(token),
                             )?;
 
-                            let mut name = BumpString::with_capacity_in(len + parts.len(), self.bump);
+                            let mut name =
+                                BumpString::with_capacity_in(len + parts.len(), self.bump);
 
                             parts.iter().for_each(|part| {
                                 name.push_str(part);
@@ -332,7 +335,7 @@ impl<'a> Parser<'a> {
                                 names.into_bump_slice(),
                                 init_exps.map(BumpVec::into_bump_slice),
                             )
-                                .into())
+                            .into())
                         }
                     },
 
@@ -382,9 +385,9 @@ impl<'a> Parser<'a> {
 
                     match res {
                         Err(Error::UnexpectedToken {
-                                expected: Some(Expectation::Expression),
-                                ..
-                            }) => Err(Rewind::Rewind),
+                            expected: Some(Expectation::Expression),
+                            ..
+                        }) => Err(Rewind::Rewind),
                         _ => res.map_err(Rewind::Abort),
                     }
                 })? {
@@ -415,7 +418,7 @@ impl<'a> Parser<'a> {
             Some(parselet) => {
                 let token = p.consume()?;
 
-                parselet.parse(p, *token)
+                parselet.parse(p, token)
             }
 
             None => p.parse_prefix_exp(),
@@ -426,7 +429,7 @@ impl<'a> Parser<'a> {
 
             lhs = match get_led_parselet(token) {
                 Some(parselet) => {
-                    self.stack_node(move |p| parselet.parse(p, p.alloc_node(lhs), *token))?
+                    self.stack_node(move |p| parselet.parse(p, p.alloc_node(lhs), token))?
                 }
 
                 None => return Err(Error::unexpected_token(self.span()?, None, *token)),
@@ -441,7 +444,7 @@ impl<'a> Parser<'a> {
             let token = p.consume()?;
 
             match get_prefix_nud_parselet(token) {
-                Some(parselet) => parselet.parse(p, *token),
+                Some(parselet) => parselet.parse(p, token),
 
                 None => Err(Error::unexpected_token(
                     p.last_span()?,
@@ -456,7 +459,7 @@ impl<'a> Parser<'a> {
                 lhs = self.stack_node(|p| {
                     let token = p.consume()?;
 
-                    parselet.parse(p, p.alloc_node(lhs), *token)
+                    parselet.parse(p, p.alloc_node(lhs), token)
                 })?;
             } else {
                 break;
@@ -526,14 +529,14 @@ impl<'a> Parser<'a> {
         match self.tokens.get(self.pos + n) {
             Some((token, _)) => Ok(token),
 
-            None => Err(Error::unexpected_eof(None::<Expectation>)),
+            None => Err(Error::UnexpectedEof { expected: None }),
         }
     }
 
     fn consume(&mut self) -> Result<'a, &'a Token<'a>> {
         self.tokens
             .get(self.pos)
-            .ok_or(Error::unexpected_eof(None::<Expectation>))
+            .ok_or(Error::UnexpectedEof { expected: None })
             .map(|(token, _)| {
                 self.pos += 1;
 
@@ -542,8 +545,8 @@ impl<'a> Parser<'a> {
     }
 
     fn expect<E>(&mut self, expected: E) -> Result<'a, ()>
-        where
-            E: Debug + Into<Option<Expectation<'a>>> + PartialEq<Token<'a>>,
+    where
+        E: Debug + Into<Option<Expectation<'a>>> + PartialEq<Token<'a>>,
     {
         let got = match self.consume() {
             Err(Error::UnexpectedEof { .. }) => return Err(Error::unexpected_eof(expected)),
@@ -570,20 +573,37 @@ impl<'a> Parser<'a> {
         consume
     }
 
+    fn consume_one_of<P>(&mut self, options: impl IntoIterator<Item = P>) -> bool
+    where
+        P: PartialEq<Token<'a>>,
+    {
+        let consume = self.next_is_in(options);
+
+        if consume {
+            let _ = self.consume();
+        }
+
+        consume
+    }
+
     fn next_is(&mut self, expected: impl PartialEq<Token<'a>>) -> bool {
         self.peek(0).map(|got| expected.eq(got)).unwrap_or(false)
     }
 
-    fn next_is_in<P>(&mut self, possibilities: impl IntoIterator<Item=P>) -> bool
-        where
-            P: PartialEq<Token<'a>>,
+    fn next_is_in<P>(&mut self, possibilities: impl IntoIterator<Item = P>) -> bool
+    where
+        P: PartialEq<Token<'a>>,
     {
-        possibilities.into_iter().any(|p| self.next_is(p))
+        let Ok(next) = self.peek(0) else {
+            return false;
+        };
+
+        possibilities.into_iter().any(|p| p.eq(next))
     }
 
     fn with_rewind<T, F>(&mut self, func: F) -> Result<'a, Option<T>>
-        where
-            F: FnOnce(&mut Parser<'a>) -> Result<'a, T, Rewind<'a>>,
+    where
+        F: FnOnce(&mut Parser<'a>) -> Result<'a, T, Rewind<'a>>,
     {
         let rewind_to = self.pos;
 
@@ -628,20 +648,20 @@ impl<'a> Parser<'a> {
         self.tokens
             .get(self.pos)
             .map(|(_, span)| span)
-            .ok_or(Error::unexpected_eof(None))
+            .ok_or(Error::UnexpectedEof { expected: None })
     }
 
     fn last_span(&self) -> Result<'a, &'a Span> {
         self.tokens
             .get(self.pos.wrapping_sub(1))
             .map(|(_, span)| span)
-            .ok_or(Error::unexpected_eof(None))
+            .ok_or(Error::UnexpectedEof { expected: None })
     }
     // </Helpers>
 
     // <Parse Helpers>
     /// Parse function / method arguments
-    fn parse_args(&mut self, token: Token<'a>) -> Result<'a, BumpVec<'a, Node<&'a Exp<'a>>>> {
+    fn parse_args(&mut self, token: &'a Token<'a>) -> Result<'a, BumpVec<'a, Node<&'a Exp<'a>>>> {
         match token {
             // function(arg, arg2)
             Token::LParens => {
@@ -676,7 +696,7 @@ impl<'a> Parser<'a> {
             token => Err(Error::unexpected_token(
                 self.span()?,
                 Expectation::Args,
-                token,
+                *token,
             )),
         }
     }
@@ -701,34 +721,32 @@ impl<'a> Parser<'a> {
         &mut self,
         delim: D,
         mut parse: P,
-        is_end: IE,
+        mut is_end: IE,
     ) -> Result<'a, BumpVec<'a, T>>
-        where
-            T: 'a,
-            D: Into<Token<'a>>,
-            P: FnMut(&mut Parser<'a>) -> Result<'a, T>,
-            IE: Fn(&Token) -> bool,
+    where
+        T: 'a,
+        D: PartialEq<Token<'a>> + Copy,
+        P: FnMut(&mut Parser<'a>) -> Result<'a, T>,
+        IE: FnMut(&Token) -> bool,
     {
-        let delim = delim.into();
-
         let mut items = BumpVec::new_in(self.bump);
 
         while !is_end(self.peek(0)?) {
             items.push(parse(self)?);
 
-            if !is_end(self.peek(0)?) {
-                self.expect(delim)?;
+            if !self.consume_a(delim) {
+                break;
             }
         }
 
         Ok(items)
     }
 
-    fn parse_list<T, P>(&mut self, parse: P) -> Result<'a, BumpVec<'a, T>>
-        where
-            P: Fn(&mut Parser<'a>) -> Result<'a, T>,
+    fn parse_list<T, P>(&mut self, mut parse: P) -> Result<'a, BumpVec<'a, T>>
+    where
+        P: FnMut(&mut Parser<'a>) -> Result<'a, T>,
     {
-        let mut items = BumpVec::new_in(self.bump);
+        let mut items = BumpVec::with_capacity_in(1, self.bump);
 
         loop {
             items.push(parse(self)?);

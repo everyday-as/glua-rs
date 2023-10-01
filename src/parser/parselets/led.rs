@@ -15,7 +15,7 @@ impl Led for AccessParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
         match token {
             // foo[Exp]
@@ -50,7 +50,7 @@ impl Led for AdditiveParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
         let op = match token {
             Token::Op(Op::Add) => BinOp::Add,
@@ -75,9 +75,9 @@ impl Led for AndParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::Op(Op::And), token);
+        debug_assert_eq!(Token::Op(Op::And), *token);
 
         let rhs = parser.node(|p| p.parse_exp_prec(self.get_precedence()))?;
 
@@ -96,9 +96,9 @@ impl Led for ConcatParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::Op(Op::DotDot), token);
+        debug_assert_eq!(Token::Op(Op::DotDot), *token);
 
         // Right associative so pass one lower precedence level than us
         let rhs = parser.node(|p| p.parse_exp_prec(Precedence::Comparative))?;
@@ -118,7 +118,7 @@ impl Led for ComparativeParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
         let op = match token {
             Token::Op(Op::EqEq) => BinOp::Eq,
@@ -147,9 +147,9 @@ impl Led for ExponentiationParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::Op(Op::Exp), token);
+        debug_assert_eq!(Token::Op(Op::Exp), *token);
 
         // Right associative so pass one lower precedence level than us
         let rhs = parser.node(|p| p.parse_exp_prec(Precedence::Unary))?;
@@ -169,7 +169,7 @@ impl Led for FunctionCallParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
         let args = parser.parse_args(token)?;
 
@@ -188,16 +188,16 @@ impl Led for MethodCallParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::Op(Op::Colon), token);
+        debug_assert_eq!(Token::Op(Op::Colon), *token);
 
         let name = parser.parse_name()?;
 
         let args = {
             let token = parser.consume()?;
 
-            parser.parse_args(*token)?
+            parser.parse_args(token)?
         };
 
         Ok(MethodCall::new(lhs, name, args.into_bump_slice()).into())
@@ -215,7 +215,7 @@ impl Led for MultiplicativeParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
         let op = match token {
             Token::Op(Op::Mod) => BinOp::Mod,
@@ -241,9 +241,9 @@ impl Led for OrParselet {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>> {
-        assert_eq!(Token::Op(Op::Or), token);
+        debug_assert_eq!(Token::Op(Op::Or), *token);
 
         let rhs = parser.node(|p| p.parse_exp_prec(self.get_precedence()))?;
 

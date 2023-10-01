@@ -1,7 +1,4 @@
-use bumpalo::{
-    collections::{Vec as BumpVec},
-    Bump,
-};
+use bumpalo::{collections::Vec as BumpVec, Bump};
 use logos::{Lexer, Logos, Source};
 use memchr::memmem;
 

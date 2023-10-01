@@ -9,7 +9,7 @@ pub mod nud;
 
 // Null-denotation rule
 pub trait Nud {
-    fn parse<'a>(&self, parser: &mut Parser<'a>, token: Token<'a>) -> Result<'a, Exp<'a>>;
+    fn parse<'a>(&self, parser: &mut Parser<'a>, token: &'a Token<'a>) -> Result<'a, Exp<'a>>;
 }
 
 // Left-denotation rule
@@ -18,7 +18,7 @@ pub trait Led {
         &self,
         parser: &mut Parser<'a>,
         lhs: Node<&'a Exp>,
-        token: Token<'a>,
+        token: &'a Token<'a>,
     ) -> Result<'a, Exp<'a>>;
     fn get_precedence(&self) -> Precedence;
 }
