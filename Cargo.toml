@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 bumpalo = { version = "3.14.0", features = ["collections"] }
+byteyarn = "0.3.0"
 logos = "0.13.0"
 memchr = "2.6.3"
 stacker = "0.1.15"

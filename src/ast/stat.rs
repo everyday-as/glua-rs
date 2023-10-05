@@ -1,8 +1,7 @@
 use crate::ast::{
     exps::{FunctionCall, MethodCall},
     stats::{
-        Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, Label, RepeatUntil, Return, VarDef,
-        While,
+        Assignment, Do, For, ForIn, FunctionDef, Goto, IfElse, RepeatUntil, Return, VarDef, While,
     },
 };
 
@@ -21,7 +20,7 @@ pub enum Stat<'a> {
     Goto(Goto<'a>),
     IfElse(IfElse<'a>),
     // GMod specific label statement
-    Label(Label<'a>),
+    Label(&'a str),
     MethodCall(MethodCall<'a>),
     None,
     RepeatUntil(RepeatUntil<'a>),
@@ -75,12 +74,6 @@ impl<'a> From<Goto<'a>> for Stat<'a> {
 impl<'a> From<IfElse<'a>> for Stat<'a> {
     fn from(value: IfElse<'a>) -> Self {
         Self::IfElse(value)
-    }
-}
-
-impl<'a> From<Label<'a>> for Stat<'a> {
-    fn from(value: Label<'a>) -> Self {
-        Self::Label(value)
     }
 }
 

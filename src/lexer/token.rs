@@ -1,4 +1,5 @@
-use bumpalo::{collections::Vec as BumpVec, Bump};
+use bumpalo::{Bump, collections::Vec as BumpVec};
+use byteyarn::YarnRef;
 use logos::{Lexer, Logos, Source};
 use memchr::memmem;
 
@@ -53,7 +54,7 @@ pub enum Token<'a> {
     })]
     #[regex(r#""([^"\\\n]|\\.)*""#, | lex | string_literal(lex).map(Literal::String))]
     #[regex(r"'([^'\\\n]|\\.)*'", | lex | string_literal(lex).map(Literal::String))]
-    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(|s| Literal::String(s.as_bytes())))]
+    #[regex(r"\[(=*)\[", | lex | multi_line(lex).map(|s| Literal::String(YarnRef::new(s.as_bytes()))))]
     Literal(Literal<'a>),
     #[token("(")]
     LParens,
@@ -119,7 +120,7 @@ impl From<Op> for Token<'_> {
     }
 }
 
-fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a [u8]> {
+fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<YarnRef<'a, [u8]>> {
     let slice = lexer.slice().as_bytes();
 
     let pad = slice.starts_with(b"[") as usize + 1;
@@ -219,12 +220,12 @@ fn string_literal<'a>(lexer: &Lexer<'a, Token<'a>>) -> Option<&'a [u8]> {
     }
 
     if base == pad {
-        return Some(&slice[pad..slice.len() - pad]);
+        return Some(YarnRef::new(&slice[pad..slice.len() - pad]));
     } else if base < slice.len() - pad {
         value.extend_from_slice(&slice[base..slice.len() - pad])
     }
 
-    Some(value.into_bump_slice())
+    Some(YarnRef::new(value.into_bump_slice()))
 }
 
 fn comment<'a>(lexer: &mut Lexer<'a, Token<'a>>) -> Option<&'a str> {

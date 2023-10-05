@@ -13,7 +13,7 @@ mod tests {
 
     use bumpalo::Bump;
 
-    use crate::{parser::Error, Parser};
+    use crate::{Parser, parser::Error};
 
     static CODE: &'static str = include_str!("../test.lua");
 
@@ -45,11 +45,11 @@ mod tests {
             );
         }
 
-        let file = File::create("test.parsed").unwrap();
+        let ast_file = File::create("test.ast").unwrap();
+        let str_file = File::create("test.out.lua").unwrap();
 
-        let mut writer = BufWriter::new(file);
-
-        write!(writer, "{:#?}", chunk).unwrap();
+        write!(BufWriter::new(ast_file), "{:#?}", chunk).unwrap();
+        write!(BufWriter::new(str_file), "{}", chunk).unwrap();
     }
 
     fn unwrap<T>(res: Result<T, Error>) -> T {

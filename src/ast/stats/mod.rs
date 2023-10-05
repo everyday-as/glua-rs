@@ -1,7 +1,7 @@
 pub use self::{
     assignment::Assignment, do_::Do, for_::For, for_in::ForIn, function_def::FunctionDef,
-    goto::Goto, if_else::IfElse, label::Label, repeat_until::RepeatUntil, return_::Return,
-    var_def::VarDef, while_::While,
+    goto::Goto, if_else::IfElse, repeat_until::RepeatUntil, return_::Return, var_def::VarDef,
+    while_::While,
 };
 
 mod assignment;
@@ -11,7 +11,6 @@ mod for_in;
 mod function_def;
 mod goto;
 mod if_else;
-mod label;
 mod repeat_until;
 mod return_;
 mod var_def;

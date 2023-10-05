@@ -1,19 +1,20 @@
 use std::fmt::Debug;
 
 use bumpalo::{
-    collections::{String as BumpString, Vec as BumpVec},
     Bump,
+    collections::{String as BumpString, Vec as BumpVec},
 };
-pub use error::Error;
 use logos::Logos;
 pub use logos::Span;
 
+pub use error::Error;
+
 use crate::{
-    ast::{exps::*, node::Node, stats::*, Exp, Stat, *},
+    ast::{*, Exp, exps::*, node::Node, Stat, stats::*},
     lexer::*,
     parser::{
         error::Expectation,
-        parselets::{led, nud, nud::TableConstructorParselet, Led, Nud},
+        parselets::{led, Led, nud, Nud, nud::TableConstructorParselet},
     },
 };
 
@@ -108,7 +109,7 @@ impl<'a> Parser<'a> {
             self.consume_a(Token::Semicolon);
         }
 
-        Ok(stats.into_bump_slice())
+        Ok(Block(stats.into_bump_slice()))
     }
 
     pub fn parse_stat(&mut self) -> Result<'a, Stat<'a>> {
@@ -385,7 +386,7 @@ impl<'a> Parser<'a> {
             Token::Label(name) => {
                 self.consume()?;
 
-                Ok(Label::new(name).into())
+                Ok(Stat::Label(name))
             }
 
             token => Err(Error::unexpected_token(
@@ -720,7 +721,7 @@ impl<'a> Parser<'a> {
             // function"string"
             Token::Literal(Literal::String(arg)) => Ok(bumpalo::vec![
                 in self.bump;
-                self.alloc_node(Node::new(self.last_span()?.clone(), Exp::String(arg)))
+                self.alloc_node(Node::new(self.last_span()?.clone(), Exp::String(*arg)))
             ]),
 
             token => Err(Error::unexpected_token(

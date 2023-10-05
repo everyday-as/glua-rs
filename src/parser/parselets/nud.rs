@@ -2,8 +2,8 @@ use bumpalo::collections::Vec;
 
 use crate::{
     ast::{
-        exps::{table::Field, unary::UnOp, TableConstructor, Unary},
         Exp,
+        exps::{table::Field, TableConstructor, Unary, unary::UnOp},
     },
     lexer::{Keyword, Literal, Op, Token},
     parser::{parselets::Nud, Parser, Precedence, Result},
@@ -38,7 +38,7 @@ impl Nud for LiteralParselet {
                 Literal::Bool(value) => Ok(Exp::Bool(*value)),
                 Literal::Nil => Ok(Exp::Nil),
                 Literal::Number(value) => Ok(Exp::Number(*value)),
-                Literal::String(value) => Ok(Exp::String(value)),
+                Literal::String(value) => Ok(Exp::String(*value)),
             },
 
             _ => unreachable!(),
@@ -88,7 +88,7 @@ impl Nud for TableConstructorParselet {
                 Token::Keyword(Keyword::Goto) | Token::Name(_)
                     if parser.peek(1)? == &Token::Op(Op::Eq) =>
                 {
-                    let key = parser.node(|p| p.parse_name().map(|s| Exp::String(s.as_bytes())))?;
+                    let key = parser.node(|p| p.parse_name().map(|s| Exp::Ref(s)))?;
 
                     parser.consume()?;
 

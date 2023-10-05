@@ -2,19 +2,11 @@ use std::ops::Deref;
 
 use logos::Span;
 
-use crate::ast::{
-    exps::Member,
-    visitors::{renderer::Renderer, walk_exp, Visitor},
-    Exp,
-};
-
 #[derive(Clone, Copy, Debug)]
 pub struct Node<T> {
     span: (usize, usize),
     inner: T,
 }
-
-// impl<T> Copy for Node<T> where T: Copy {}
 
 impl<T> Node<T> {
     pub fn new(span: Span, inner: T) -> Self {
@@ -41,31 +33,11 @@ impl<T> Node<T> {
     }
 
     #[inline(always)]
-    pub fn morph<U>(this: &Self, inner: U) -> Node<U> {
+    pub const fn morph<U>(this: &Self, inner: U) -> Node<U> {
         Node {
             span: this.span,
             inner,
         }
-    }
-}
-
-impl ToString for Node<&Exp<'_>> {
-    fn to_string(&self) -> String {
-        let mut renderer = Renderer::default();
-
-        walk_exp(&mut renderer, self);
-
-        renderer.into_inner()
-    }
-}
-
-impl ToString for Node<&Member<'_>> {
-    fn to_string(&self) -> String {
-        let mut renderer = Renderer::default();
-
-        renderer.visit_member_exp(self);
-
-        renderer.into_inner()
     }
 }
 

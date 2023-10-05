@@ -1,5 +1,11 @@
-use crate::ast::exps::{
-    Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary,
+use std::fmt::{Display, Formatter};
+
+use byteyarn::YarnRef;
+
+use crate::ast::{
+    exps::{Binary, Function, FunctionCall, Index, Member, MethodCall, TableConstructor, Unary},
+    node::Node,
+    visitors::{renderer::Renderer, walk_exp},
 };
 
 #[derive(Clone, Copy, Debug)]
@@ -14,10 +20,16 @@ pub enum Exp<'a> {
     Nil,
     Number(f64),
     Ref(&'a str),
-    String(&'a [u8]),
+    String(YarnRef<'a, [u8]>),
     Table(TableConstructor<'a>),
     Unary(Unary<'a>),
     VarArgs,
+}
+
+impl Display for Node<&Exp<'_>> {
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        Renderer::fmt(self, f, walk_exp)
+    }
 }
 
 impl<'a> From<Binary<'a>> for Exp<'a> {
