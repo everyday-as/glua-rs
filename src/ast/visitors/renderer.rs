@@ -303,11 +303,15 @@ impl Visitor<'_> for Renderer<'_, '_> {
     }
 
     fn visit_binary_exp(&mut self, v: &Node<&Binary>) {
+        self.ch('(');
+
         walk_exp(self, &v.lhs);
 
         self.try_fmt(|f| write!(f, " {} ", v.op));
 
         walk_exp(self, &v.rhs);
+
+        self.ch(')');
     }
 
     fn visit_function_exp(&mut self, v: &Node<&Function>) {
